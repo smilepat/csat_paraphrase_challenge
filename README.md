@@ -7,6 +7,8 @@
 > `noindex` 헤더가 걸려 있고, `/admin/*` 과 `/host/*` 는 `TEACHER_PASSWORD` 로 막힙니다
 > (운영에서 미설정 시 503). 배포 전 [docs/DEPLOY.md](docs/DEPLOY.md) 를 먼저 읽으세요.
 
+재개·인수인계는 [HANDOFF.md](HANDOFF.md) 를 먼저 보세요.
+
 ## 빠르게 돌려보기
 
 ```bash
