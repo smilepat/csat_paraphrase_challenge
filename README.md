@@ -48,7 +48,7 @@ npm run dev
 ## 검증
 
 ```bash
-npm test          # 채점 순수 함수 단위 테스트 30개
+npm test          # 채점·검수 순수 함수 단위 테스트 37개
 npm run test:e2e  # 수업 전 구간 (외부 API 없이, 가짜 임베딩)
 npm run calibrate # 채점 품질 회귀 (실제 API 사용)
 npm run typecheck
