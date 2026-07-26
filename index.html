@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>100-Word Paraphrase Challenge</title>
+  <style>
+    :root{
+      --bg:#f4f7fb; --card:#ffffff; --ink:#1f2937; --muted:#64748b;
+      --blue:#2563eb; --red:#dc2626; --green:#16a34a; --gold:#d97706;
+      --line:#dbe3ee; --soft:#eef4ff;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,"Noto Sans KR",sans-serif;background:var(--bg);color:var(--ink)}
+    header{background:linear-gradient(135deg,#1d4ed8,#0f766e);color:white;padding:22px 18px}
+    header h1{margin:0 0 8px;font-size:clamp(24px,4vw,38px)}
+    header p{margin:0;opacity:.92}
+    main{max-width:1100px;margin:0 auto;padding:18px}
+    .toolbar,.card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 8px 24px rgba(15,23,42,.06)}
+    .toolbar{padding:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+    button,select,input,textarea{font:inherit}
+    button{border:0;border-radius:12px;padding:11px 15px;font-weight:700;cursor:pointer}
+    .primary{background:var(--blue);color:white}
+    .secondary{background:#e2e8f0;color:#1e293b}
+    .success{background:var(--green);color:white}
+    .danger{background:var(--red);color:white}
+    .ghost{background:white;border:1px solid var(--line)}
+    select,input{padding:10px;border:1px solid var(--line);border-radius:10px;background:white}
+    .grid{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}
+    .card{padding:18px}
+    .passage{font-size:18px;line-height:1.75;background:#f8fafc;border-radius:14px;padding:16px;border-left:6px solid var(--blue)}
+    .meta{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0;color:var(--muted)}
+    .badge{background:#eef2ff;padding:7px 10px;border-radius:999px;font-size:14px}
+    .keyword-box{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 16px}
+    .keyword{background:#fff7ed;border:1px solid #fed7aa;padding:7px 10px;border-radius:999px}
+    textarea{width:100%;min-height:120px;border:2px solid var(--line);border-radius:14px;padding:14px;line-height:1.5;resize:vertical}
+    textarea:focus{outline:none;border-color:var(--blue)}
+    .counter{display:flex;justify-content:space-between;margin:8px 2px;color:var(--muted)}
+    .score-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+    .score-box{padding:14px;border-radius:14px;background:#f8fafc;text-align:center;border:1px solid var(--line)}
+    .score-box strong{display:block;font-size:28px}
+    .teams{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .team{padding:14px;border-radius:16px;color:white}
+    .team.blue{background:var(--blue)} .team.red{background:var(--red)}
+    .team.active{outline:5px solid #facc15;transform:translateY(-2px)}
+    .team .points{font-size:34px;font-weight:800}
+    .feedback{margin-top:14px;padding:14px;border-radius:14px;background:var(--soft);line-height:1.6}
+    .model{display:none;margin-top:12px;padding:14px;border-radius:14px;background:#ecfdf5;border:1px solid #86efac}
+    .model.show{display:block}
+    .rules{font-size:15px;line-height:1.65;color:#475569}
+    .progress{height:12px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-top:10px}
+    .progress > div{height:100%;background:linear-gradient(90deg,#22c55e,#eab308,#ef4444);width:0}
+    .edit-area{display:none;margin-top:14px;border-top:1px solid var(--line);padding-top:14px}
+    .edit-area.show{display:block}
+    .edit-area input,.edit-area textarea{width:100%;margin-top:8px}
+    @media(max-width:800px){.grid{grid-template-columns:1fr}.passage{font-size:16px}}
+  </style>
+</head>
+<body>
+<header>
+  <h1>100-Word Paraphrase Challenge</h1>
+  <p>긴 수능형 지문을 가장 짧고 쉬운 영어로 바꾸세요.</p>
+</header>
+
+<main>
+  <section class="toolbar">
+    <label>지문
+      <select id="passageSelect"></select>
+    </label>
+    <label>목표 단어 수
+      <select id="targetWords">
+        <option value="30">30단어</option>
+        <option value="25" selected>25단어</option>
+        <option value="20">20단어</option>
+        <option value="15">15단어</option>
+      </select>
+    </label>
+    <button class="secondary" id="newRoundBtn">새 라운드</button>
+    <button class="ghost" id="editBtn">교사용 문항 편집</button>
+  </section>
+
+  <div class="grid">
+    <section class="card">
+      <h2 id="title">지문</h2>
+      <div class="passage" id="passage"></div>
+      <div class="meta">
+        <span class="badge" id="originalCount">원문 0단어</span>
+        <span class="badge" id="topicBadge">주제</span>
+      </div>
+
+      <h3>반드시 살려야 할 핵심어</h3>
+      <div class="keyword-box" id="keywords"></div>
+
+      <h3>가장 짧고 쉽게 바꾸기</h3>
+      <textarea id="answer" placeholder="Write one or two short, easy sentences."></textarea>
+      <div class="counter">
+        <span id="wordCount">0단어</span>
+        <span id="targetInfo">목표: 25단어 이하</span>
+      </div>
+      <div class="progress"><div id="lengthBar"></div></div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+        <button class="primary" id="checkBtn">점수 확인</button>
+        <button class="success" id="awardBtn">현재 팀에 점수 추가</button>
+        <button class="secondary" id="clearBtn">다시 쓰기</button>
+      </div>
+
+      <div class="feedback" id="feedback">
+        핵심 의미를 유지하되 어려운 단어와 긴 구조를 줄여 보세요.
+      </div>
+
+      <div class="model" id="modelBox">
+        <strong>예시 답안</strong>
+        <p id="modelAnswer"></p>
+        <small>예시 답안은 하나의 가능성일 뿐입니다. 의미가 같다면 다른 표현도 정답이 될 수 있습니다.</small>
+      </div>
+      <button class="ghost" id="modelBtn" style="margin-top:10px">예시 답안 보기</button>
+
+      <div class="edit-area" id="editArea">
+        <h3>교사용 문항 편집</h3>
+        <input id="editTitle" placeholder="지문 제목">
+        <textarea id="editPassage" placeholder="약 100단어 영어 지문"></textarea>
+        <input id="editTopic" placeholder="주제">
+        <input id="editKeywords" placeholder="핵심어: comma, separated, words">
+        <textarea id="editModel" placeholder="짧고 쉬운 예시 답안"></textarea>
+        <button class="primary" id="saveCustomBtn">새 문항으로 추가</button>
+      </div>
+    </section>
+
+    <aside>
+      <section class="card">
+        <h2>팀 대항 점수</h2>
+        <div class="teams">
+          <div class="team blue active" id="teamA">
+            <strong>BLUE TEAM</strong>
+            <div class="points" id="scoreA">0</div>
+          </div>
+          <div class="team red" id="teamB">
+            <strong>RED TEAM</strong>
+            <div class="points" id="scoreB">0</div>
+          </div>
+        </div>
+        <button class="secondary" id="switchBtn" style="width:100%;margin-top:12px">팀 교대</button>
+
+        <div class="score-grid">
+          <div class="score-box"><span>핵심 보존</span><strong id="meaningScore">0</strong></div>
+          <div class="score-box"><span>짧게 쓰기</span><strong id="lengthScore">0</strong></div>
+          <div class="score-box"><span>쉬운 표현</span><strong id="easyScore">0</strong></div>
+          <div class="score-box"><span>총점</span><strong id="totalScore">0</strong></div>
+        </div>
+      </section>
+
+      <section class="card" style="margin-top:16px">
+        <h2>게임 규칙</h2>
+        <div class="rules">
+          1. 원문을 읽고 핵심어를 확인합니다.<br>
+          2. 한두 문장으로 최대한 짧게 바꿉니다.<br>
+          3. 핵심 의미를 빼면 감점됩니다.<br>
+          4. 목표 단어 수보다 짧으면 보너스를 받습니다.<br>
+          5. 어려운 단어와 긴 문장을 줄이면 점수가 올라갑니다.<br>
+          6. 교사는 의미가 자연스럽게 유지됐는지 최종 판단합니다.
+        </div>
+        <button class="danger" id="resetScoreBtn" style="width:100%;margin-top:12px">전체 점수 초기화</button>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<script>
+const passages = [
+  {
+    title:"Speed and Independent Thinking",
+    topic:"빠른 학습과 독립적 사고",
+    text:"Learning quickly often looks impressive, but speed can hide an important weakness. When a guide tells travelers every turn, they may reach their destination faster and make fewer mistakes. However, people who always depend on guidance may fail to develop a strong sense of direction. The same is true in education. A tutor who immediately gives information and shows students how to find answers can improve short-term performance. Yet students may lose chances to wonder, struggle, make mistakes, and correct themselves. These slow experiences help the brain build stronger connections and prepare learners to think independently when support is no longer available.",
+    keywords:["speed","guidance","mistakes","independent thinking"],
+    model:"Fast guidance improves results, but struggle and mistakes help students learn to think independently."
+  },
+  {
+    title:"The Value of Productive Difficulty",
+    topic:"어려움의 교육적 가치",
+    text:"People naturally prefer tasks that feel easy because easy work creates a sense of progress. Yet smooth performance does not always lead to lasting learning. When learners must retrieve an idea, compare possibilities, or explain a concept in their own words, they experience difficulty. This effort may slow them down and even cause temporary frustration. However, the struggle forces them to reorganize knowledge and build stronger mental connections. As a result, information becomes easier to use in new situations. Good teaching therefore does not remove every obstacle. It provides support while leaving enough difficulty for students to think, test ideas, and grow.",
+    keywords:["easy work","difficulty","stronger connections","good teaching"],
+    model:"Easy work feels good, but useful difficulty builds stronger learning, so teachers should not remove every challenge."
+  },
+  {
+    title:"Technology and Memory",
+    topic:"기술과 기억",
+    text:"Digital tools allow people to store enormous amounts of information outside their minds. This convenience reduces the need to remember facts, directions, or schedules. Some people therefore assume that memory is becoming less important. However, memory does more than preserve isolated facts. What we already know helps us understand new ideas, notice patterns, and judge whether information is reasonable. A person who knows very little must depend heavily on search results and may struggle to evaluate them. Technology is most useful when it expands human thinking rather than replaces it. We still need knowledge in memory to ask good questions and make sound decisions.",
+    keywords:["digital tools","memory","understand","decisions"],
+    model:"Digital tools store information, but memory still helps us understand ideas and make good decisions."
+  }
+];
+
+let current = 0;
+let activeTeam = "A";
+let scores = {A:0,B:0};
+let lastTotal = 0;
+
+const $ = id => document.getElementById(id);
+
+function countWords(text){
+  return text.trim() ? text.trim().split(/\s+/).length : 0;
+}
+
+function renderSelect(){
+  $("passageSelect").innerHTML = passages.map((p,i)=>`<option value="${i}">${i+1}. ${p.title}</option>`).join("");
+}
+
+function renderPassage(){
+  const p = passages[current];
+  $("title").textContent = p.title;
+  $("passage").textContent = p.text;
+  $("originalCount").textContent = `원문 ${countWords(p.text)}단어`;
+  $("topicBadge").textContent = p.topic;
+  $("keywords").innerHTML = p.keywords.map(k=>`<span class="keyword">${k}</span>`).join("");
+  $("modelAnswer").textContent = p.model;
+  $("answer").value = "";
+  $("modelBox").classList.remove("show");
+  resetRoundScores();
+  updateCounter();
+}
+
+function updateCounter(){
+  const words = countWords($("answer").value);
+  const target = Number($("targetWords").value);
+  $("wordCount").textContent = `${words}단어`;
+  $("targetInfo").textContent = `목표: ${target}단어 이하`;
+  const ratio = Math.min(100, words/target*100);
+  $("lengthBar").style.width = ratio + "%";
+}
+
+function simpleStem(word){
+  return word.toLowerCase().replace(/[^a-z]/g,"").replace(/(ing|ed|es|s)$/,"");
+}
+
+function keywordCoverage(answer, keywords){
+  const normalized = answer.toLowerCase();
+  let hit = 0;
+  keywords.forEach(k=>{
+    const parts = k.toLowerCase().split(/\s+/);
+    const matched = parts.some(part=>{
+      const stem = simpleStem(part);
+      return stem.length > 3 && normalized.includes(stem);
+    });
+    if(matched) hit++;
+  });
+  return {hit, total:keywords.length};
+}
+
+function easyLanguageScore(answer){
+  const hard = [
+    "therefore","however","nevertheless","consequently","approximately",
+    "significant","individuals","demonstrate","facilitate","utilize",
+    "independently","information","performance","development"
+  ];
+  const words = answer.toLowerCase().match(/[a-z]+/g) || [];
+  const hardCount = words.filter(w=>hard.includes(w)).length;
+  const avg = words.length ? words.reduce((s,w)=>s+w.length,0)/words.length : 0;
+  let score = 25 - hardCount*3 - Math.max(0,avg-6)*2;
+  return Math.max(0,Math.round(score));
+}
+
+function checkAnswer(){
+  const answer = $("answer").value.trim();
+  if(!answer){
+    $("feedback").textContent = "먼저 짧은 영어 문장을 작성하세요.";
+    return;
+  }
+  const p = passages[current];
+  const words = countWords(answer);
+  const target = Number($("targetWords").value);
+  const coverage = keywordCoverage(answer,p.keywords);
+
+  const meaning = Math.round((coverage.hit/coverage.total)*50);
+  let length = words <= target ? 25 : Math.max(0,25-(words-target)*2);
+  if(words <= Math.max(8,target-8)) length = Math.min(30,length+5);
+  const easy = easyLanguageScore(answer);
+  const total = Math.min(100, meaning + length + easy);
+
+  $("meaningScore").textContent = meaning;
+  $("lengthScore").textContent = length;
+  $("easyScore").textContent = easy;
+  $("totalScore").textContent = total;
+  lastTotal = total;
+
+  const missing = p.keywords.filter(k=>{
+    const norm = answer.toLowerCase();
+    return !k.split(/\s+/).some(part=>{
+      const stem = simpleStem(part);
+      return stem.length > 3 && norm.includes(stem);
+    });
+  });
+
+  let message = `현재 답안은 ${words}단어입니다. `;
+  if(words <= target) message += "목표 길이를 지켰습니다. ";
+  else message += `${words-target}단어를 더 줄여 보세요. `;
+  if(missing.length) message += `빠진 핵심 의미를 확인하세요: ${missing.join(", ")}.`;
+  else message += "핵심 의미가 대체로 살아 있습니다. 교사가 자연스러움과 정확성을 최종 확인해 주세요.";
+  $("feedback").textContent = message;
+}
+
+function resetRoundScores(){
+  ["meaningScore","lengthScore","easyScore","totalScore"].forEach(id=>$(id).textContent="0");
+  lastTotal=0;
+  $("feedback").textContent="핵심 의미를 유지하되 어려운 단어와 긴 구조를 줄여 보세요.";
+}
+
+function updateTeams(){
+  $("scoreA").textContent=scores.A;
+  $("scoreB").textContent=scores.B;
+  $("teamA").classList.toggle("active",activeTeam==="A");
+  $("teamB").classList.toggle("active",activeTeam==="B");
+}
+
+$("passageSelect").addEventListener("change",e=>{current=Number(e.target.value);renderPassage();});
+$("targetWords").addEventListener("change",updateCounter);
+$("answer").addEventListener("input",updateCounter);
+$("checkBtn").addEventListener("click",checkAnswer);
+$("clearBtn").addEventListener("click",()=>{$("answer").value="";resetRoundScores();updateCounter();});
+$("modelBtn").addEventListener("click",()=>$("modelBox").classList.toggle("show"));
+$("switchBtn").addEventListener("click",()=>{activeTeam=activeTeam==="A"?"B":"A";updateTeams();});
+$("awardBtn").addEventListener("click",()=>{
+  if(lastTotal===0){$("feedback").textContent="먼저 점수 확인 버튼을 누르세요.";return;}
+  scores[activeTeam]+=lastTotal;
+  updateTeams();
+  $("feedback").textContent=`${activeTeam==="A"?"BLUE":"RED"} TEAM에 ${lastTotal}점을 추가했습니다.`;
+});
+$("resetScoreBtn").addEventListener("click",()=>{scores={A:0,B:0};updateTeams();});
+$("newRoundBtn").addEventListener("click",()=>{
+  current=(current+1)%passages.length;
+  $("passageSelect").value=current;
+  activeTeam=activeTeam==="A"?"B":"A";
+  updateTeams(); renderPassage();
+});
+$("editBtn").addEventListener("click",()=>$("editArea").classList.toggle("show"));
+$("saveCustomBtn").addEventListener("click",()=>{
+  const title=$("editTitle").value.trim();
+  const text=$("editPassage").value.trim();
+  const topic=$("editTopic").value.trim();
+  const keywords=$("editKeywords").value.split(",").map(s=>s.trim()).filter(Boolean);
+  const model=$("editModel").value.trim();
+  if(!title||!text||keywords.length<2||!model){
+    alert("제목, 지문, 핵심어 2개 이상, 예시 답안을 입력하세요.");
+    return;
+  }
+  passages.push({title,text,topic:topic||"사용자 문항",keywords,model});
+  renderSelect();
+  current=passages.length-1;
+  $("passageSelect").value=current;
+  renderPassage();
+  alert("새 문항을 추가했습니다.");
+});
+
+renderSelect();
+renderPassage();
+updateTeams();
+</script>
+</body>
+</html>
