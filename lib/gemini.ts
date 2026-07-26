@@ -8,26 +8,34 @@
 //   - 일일 호출 상한 (과거 429 prepay 소진 사고 대비)
 // ============================================================
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY
+// env 는 전부 지연 조회한다. 모듈 로드 시점에 읽으면 서버리스 콜드스타트나
+// 스크립트의 .env.local 로딩보다 먼저 평가돼 빈 값이 굳어버린다.
+const apiKey = () => process.env.GEMINI_API_KEY
 
 // gemini-2.0-flash 는 2026 중반 퇴역(404). 현행 안정 모델을 기본값으로 둔다.
-const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash"
-const EMBED_MODEL = "text-embedding-004"
+const GEMINI_MODEL = () => process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash"
+// text-embedding-004 는 퇴역(404). 2026-07 기준 사용 가능한 임베딩 모델은
+// gemini-embedding-001 / -2 / -2-preview 세 가지다.
+// -2 를 쓰는 이유: 의미 역전 문장과 올바른 패러프레이즈의 분리력이 001 보다 훨씬 낫다
+//   (001: 0.804 vs 0.812 — 사실상 구별 못 함 / -2: 0.840 vs 0.915).
+// 768 차원은 3072 와 성능 차이가 거의 없으면서 저장량이 1/4 이다(MRL 절단).
+const EMBED_MODEL = () => process.env.GEMINI_EMBED_MODEL?.trim() || "gemini-embedding-2"
+export const EMBED_DIM = () => Number(process.env.GEMINI_EMBED_DIM || 768)
 const BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
 /** 판정 LLM 을 끈다. 임베딩과 규칙 채점은 계속 동작한다. */
 export function isLlmEnabled(): boolean {
-  return process.env.PARAPHRASE_LLM?.trim().toLowerCase() !== "off" && Boolean(GEMINI_API_KEY)
+  return process.env.PARAPHRASE_LLM?.trim().toLowerCase() !== "off" && Boolean(apiKey())
 }
 
 export function hasApiKey(): boolean {
-  return Boolean(GEMINI_API_KEY)
+  return Boolean(apiKey())
 }
 
 // ---- 일일 호출 상한 (프로세스 메모리 기준의 최소 안전장치) ----
 // 서버리스에서는 인스턴스별로 리셋되므로 완벽한 상한은 아니다. 폭주를 막는
 // 1차 방어선이고, 정확한 집계는 pc_api_usage 테이블이 담당한다.
-const DAILY_LIMIT = Number(process.env.GEMINI_DAILY_LIMIT || 2000)
+const dailyLimit = () => Number(process.env.GEMINI_DAILY_LIMIT || 2000)
 let usageDay = ""
 let usageCount = 0
 
@@ -45,11 +53,11 @@ export function noteApiCall(n = 1): void {
 }
 
 export function isOverDailyLimit(): boolean {
-  return usageDay === today() && usageCount >= DAILY_LIMIT
+  return usageDay === today() && usageCount >= dailyLimit()
 }
 
 export function usageSnapshot(): { day: string; count: number; limit: number } {
-  return { day: usageDay || today(), count: usageCount, limit: DAILY_LIMIT }
+  return { day: usageDay || today(), count: usageCount, limit: dailyLimit() }
 }
 
 export interface GeminiOpts {
@@ -65,12 +73,45 @@ interface GeminiResponse {
   candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/**
+ * 재시도. 네트워크 끊김과 429/5xx 만 다시 시도한다.
+ * 400/404 는 요청 자체의 문제라 재시도해도 같으므로 즉시 던진다.
+ * (수업 중 한 번의 ECONNRESET 으로 라운드 채점이 통째로 실패하면 안 된다)
+ */
+async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
+  let lastErr: unknown
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn()
+    } catch (e) {
+      lastErr = e
+      const msg = String((e as Error)?.message ?? e)
+      const retriable =
+        /fetch failed|ECONNRESET|ETIMEDOUT|socket hang up|terminated|aborted/i.test(msg) ||
+        /(429|500|502|503|504)/.test(msg)
+      if (!retriable || i === attempts - 1) throw e
+      await sleep(1000 * 2 ** i)
+    }
+  }
+  throw lastErr
+}
+
 export async function callGemini(
   prompt: string,
   systemInstruction?: string,
   opts?: GeminiOpts,
 ): Promise<string> {
-  if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY가 설정되지 않았습니다.")
+  return withRetry(() => callGeminiOnce(prompt, systemInstruction, opts))
+}
+
+async function callGeminiOnce(
+  prompt: string,
+  systemInstruction?: string,
+  opts?: GeminiOpts,
+): Promise<string> {
+  if (!apiKey()) throw new Error("GEMINI_API_KEY가 설정되지 않았습니다.")
   if (isOverDailyLimit()) throw new Error("Gemini 일일 호출 상한에 도달했습니다.")
 
   const generationConfig: Record<string, unknown> = {
@@ -86,7 +127,7 @@ export async function callGemini(
   if (systemInstruction) body.systemInstruction = { parts: [{ text: systemInstruction }] }
 
   noteApiCall()
-  const res = await fetch(`${BASE}/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`, {
+  const res = await fetch(`${BASE}/${GEMINI_MODEL()}:generateContent?key=${apiKey()}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -120,7 +161,40 @@ export function parseGeminiJson<T = unknown>(raw: string): T {
     const end = s.lastIndexOf(closeChar)
     if (end > start) s = s.slice(start, end + 1)
   }
-  return JSON.parse(s) as T
+  try {
+    return JSON.parse(s) as T
+  } catch (e) {
+    // 응답이 잘리면(maxOutputTokens 초과 등) 온전한 최상위 객체만 건져낸다.
+    // 수업 중 30명 판정이 통째로 날아가는 것보다 일부라도 살리는 편이 낫다.
+    const salvaged = salvageObjects(s)
+    if (salvaged.length) return salvaged as T
+    throw e
+  }
+}
+
+/** 문자열 안의 괄호를 무시하며 균형 잡힌 최상위 {...} 들만 추출한다. */
+function salvageObjects(s: string): unknown[] {
+  const out: unknown[] = []
+  let depth = 0, startIdx = -1, inStr = false, esc = false
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i]
+    if (inStr) {
+      if (esc) esc = false
+      else if (c === "\\") esc = true
+      else if (c === '"') inStr = false
+      continue
+    }
+    if (c === '"') inStr = true
+    else if (c === "{") { if (depth === 0) startIdx = i; depth++ }
+    else if (c === "}") {
+      depth--
+      if (depth === 0 && startIdx >= 0) {
+        try { out.push(JSON.parse(s.slice(startIdx, i + 1))) } catch { /* 부분 객체는 버린다 */ }
+        startIdx = -1
+      }
+    }
+  }
+  return out
 }
 
 /** 단일 텍스트 임베딩. */
@@ -134,7 +208,7 @@ export async function embed(text: string): Promise<number[]> {
  * batchEmbedContents 는 요청당 100건 제한이 있어 청크로 나눈다.
  */
 export async function embedBatch(texts: string[]): Promise<number[][]> {
-  if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY가 설정되지 않았습니다.")
+  if (!apiKey()) throw new Error("GEMINI_API_KEY가 설정되지 않았습니다.")
   if (texts.length === 0) return []
   if (isOverDailyLimit()) throw new Error("Gemini 일일 호출 상한에 도달했습니다.")
 
@@ -142,17 +216,19 @@ export async function embedBatch(texts: string[]): Promise<number[][]> {
   for (let i = 0; i < texts.length; i += 100) {
     const chunk = texts.slice(i, i + 100)
     noteApiCall()
-    const res = await fetch(`${BASE}/${EMBED_MODEL}:batchEmbedContents?key=${GEMINI_API_KEY}`, {
+    const res = await withRetry(() =>
+      fetch(`${BASE}/${EMBED_MODEL()}:batchEmbedContents?key=${apiKey()}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         requests: chunk.map((t) => ({
-          model: `models/${EMBED_MODEL}`,
+          model: `models/${EMBED_MODEL()}`,
           content: { parts: [{ text: t.slice(0, 2000) }] },
+          outputDimensionality: EMBED_DIM(),
         })),
       }),
       signal: AbortSignal.timeout(30000),
-    })
+    }))
 
     if (!res.ok) {
       const errorText = await res.text()

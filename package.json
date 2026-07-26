@@ -13,7 +13,7 @@
     "db:schema": "node scripts/run-schema.mjs",
     "db:import": "node scripts/import-passages.mjs",
     "db:enrich": "node scripts/enrich-passages.mjs",
-    "calibrate": "node scripts/calibrate.mjs"
+    "calibrate": "vite-node scripts/calibrate.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",

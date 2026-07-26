@@ -1,0 +1,1162 @@
+{
+  "targetWords": 25,
+  "note": "정답 라벨은 심판 LLM 이 확인한 실제 커버리지다. 사양과 어긋난 항목은 제외했다. 교사 검증은 여전히 별도로 필요하다.",
+  "passages": [
+    {
+      "id": "CSAT_EVEN_2025_31",
+      "title": "Literature Helps Language Learning",
+      "questionType": "빈칸 추론",
+      "body": "Literature can be helpful in the language learning process\nbecause of the it fosters in readers.\nCore language teaching materials must concentrate on how a\nlanguage operates both as a rule-based system and as a\nsociosemantic system. Very often, the process of learning is\nessentially analytic, piecemeal, and, at the level of the\npersonality, fairly superficial. Engaging imaginatively with\nliterature enables learners to shift the focus of their attention\nbeyond the more mechanical aspects of the foreign language\nsystem. When a novel, play or short story is explored over a\nperiod of time, the result is that the reader begins to ‘inhabit’\nthe text. He or she is drawn into the book. Pinpointing what\nindividual words or phrases may mean becomes less important\nthan pursuing the development of the story. The reader is\neager to find out what happens as events unfold; he or she\nfeels close to certain characters and shares their emotional\nresponses. The language becomes ‘transparent’―the fiction\ndraws the whole person into its own world.",
+      "propositions": [
+        "Literature aids language learning by fostering engagement in readers.",
+        "It shifts focus from mechanical language to story and character connection.",
+        "Readers become immersed in the text, making the language transparent.",
+        "Learning through literature is less about words, more about story."
+      ],
+      "modelAnswers": [
+        "Reading literature helps you learn a language better. It makes you care about the story.",
+        "Literature makes language learning easier. You get drawn into the book and its characters.",
+        "When you read stories, you learn a language. You focus on the plot, not just words."
+      ]
+    },
+    {
+      "id": "CSAT_EVEN_2025_22",
+      "title": "Emotion Understanding in Group Settings",
+      "questionType": "요지",
+      "body": "The ability to understand emotions―to have a diverse\nemotion vocabulary and to understand the causes and\nconsequences of emotion―is particularly relevant in group\nsettings. Individuals who are skilled in this domain are able to\nexpress emotions, feelings and moods accurately and thus,\nmay facilitate clear communication between co-workers.\nFurthermore, they may be more likely to act in ways that\naccommodate their own needs as well as the needs of others\n(i.e. cooperate). In a group conflict situation, for example, a\nmember with a strong ability to understand emotion will be\nable to express how he feels about the problem and why he\nfeels this way. He also should be able to take the perspective\nof the other group members and understand why they are\nreacting in a certain manner. Appreciation of differences creates\nan arena for open communication and promotes constructive\nconflict resolution and improved group functioning.",
+      "propositions": [
+        "Understanding emotions is very important in group situations.",
+        "Emotionally skilled people express feelings clearly and accurately.",
+        "This skill helps group members communicate and cooperate better.",
+        "It also promotes constructive conflict resolution and group function."
+      ],
+      "modelAnswers": [
+        "Understanding emotions helps groups work well. It makes communication clear.",
+        "People who understand feelings can express them well. This helps groups cooperate.",
+        "Knowing emotions helps solve group problems. It improves how groups work together."
+      ]
+    },
+    {
+      "id": "CSAT_EVEN_2025_20",
+      "title": "Using Video Games for Learning",
+      "questionType": "주장",
+      "body": "We almost universally accept that playing video games is at\nbest a pleasant break from a student’s learning and more often\nwhat prevents a student from accomplishing their goals.\nGames catch and hold attention in a way that few things can.\nAnd yet once they have our focus, they rarely seem to offer\nanything meaningful to help students grow in their lives\noutside the games. While this may be true for many games, we\nare too easily ignoring a valuable tool that could be used to\nenhance productivity instead of derailing it. Rather, it is\ndesirable that we develop games that connect to the learning\noutcomes we want for our students. This will enable educators\nto take advantage of games’ attention commanding capacities\nand allow our students to enjoy their games while learning.",
+      "propositions": [
+        "People usually think video games prevent students from learning.",
+        "Games effectively capture and hold students' attention.",
+        "We should develop games that connect to learning goals.",
+        "Such games can use attention-grabbing power for education."
+      ],
+      "modelAnswers": [
+        "Video games usually stop students from learning. But we can make games that help them learn.",
+        "Games get students' attention well. We should use games to teach students better.",
+        "Many think games are bad for study. But games can help students learn if designed right."
+      ]
+    }
+  ],
+  "items": [
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "k": 4,
+      "n": 4,
+      "text": "Literature helps learning, engaging readers. Focus shifts from rules, words to story, characters. Readers immerse, making language clear.",
+      "judgedCovered": [
+        0,
+        1,
+        2
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.75
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "k": 4,
+      "n": 4,
+      "text": "Engaging readers, literature aids language learning. Focus moves from grammar, words to story, people. Readers dive in; language becomes clear.",
+      "judgedCovered": [
+        0,
+        1,
+        2
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.75
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "k": 4,
+      "n": 4,
+      "text": "Literature helps learning, making readers engaged. Rules and words matter less; story and characters matter more. Readers immerse, language is clear.",
+      "judgedCovered": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 1
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1,
+        2
+      ],
+      "k": 3,
+      "n": 4,
+      "text": "Literature helps language learning, shifting focus from rules to story by engaging readers. Readers get into the text, making language clear.",
+      "judgedCovered": [
+        0,
+        1,
+        2
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.75
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1,
+        2
+      ],
+      "k": 3,
+      "n": 4,
+      "text": "Engaging readers, literature helps learn language. It shifts focus from grammar to story. Readers get into books, so the language becomes easy.",
+      "judgedCovered": [
+        0,
+        1,
+        2
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.75
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1,
+        2
+      ],
+      "k": 3,
+      "n": 4,
+      "text": "Literature helps learn language. It engages readers. Focus moves from grammar to story. Readers get inside book. Language is clear.",
+      "judgedCovered": [
+        0,
+        1,
+        2
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.75
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1
+      ],
+      "k": 2,
+      "n": 4,
+      "text": "Reading books helps learn language. It makes readers interested. This moves their focus from rules to stories and people.",
+      "judgedCovered": [
+        0,
+        1
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.5
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1
+      ],
+      "k": 2,
+      "n": 4,
+      "text": "Books help people learn languages better. They make readers care more. So, focus changes from grammar to story and characters.",
+      "judgedCovered": [
+        0,
+        1
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.5
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1
+      ],
+      "k": 2,
+      "n": 4,
+      "text": "Books help language learning by making readers engaged. This moves focus from language rules to stories and people.",
+      "judgedCovered": [
+        0,
+        1
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.5
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "coverage",
+      "specCovered": [
+        0
+      ],
+      "k": 1,
+      "n": 4,
+      "text": "Reading books helps people learn a new language. It makes readers interested. This engagement is good for language study.",
+      "judgedCovered": [
+        0
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.25
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "coverage",
+      "specCovered": [
+        0
+      ],
+      "k": 1,
+      "n": 4,
+      "text": "Literature helps in learning languages. It makes people interested. Readers feel engaged. This helps them learn the language well.",
+      "judgedCovered": [
+        0
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.25
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "coverage",
+      "specCovered": [
+        0
+      ],
+      "k": 1,
+      "n": 4,
+      "text": "Books are good for learning new languages. They make readers care about the story. This strong interest helps them learn much.",
+      "judgedCovered": [
+        0
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.25
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "contradict",
+      "specContradicted": [
+        0
+      ],
+      "text": "Literature does not help language learning. It focuses on story. Readers get lost in the text. Story is more important than words.",
+      "judgedCovered": [
+        3
+      ],
+      "judgedContradicted": [
+        0
+      ]
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "contradict",
+      "specContradicted": [
+        0
+      ],
+      "text": "Literature is unhelpful for language learning. It focuses on story. Readers get lost in the text. Story is more important than words.",
+      "judgedCovered": [
+        3
+      ],
+      "judgedContradicted": [
+        0
+      ]
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "contradict",
+      "specContradicted": [
+        0
+      ],
+      "text": "Literature does not help language learning. It focuses on story. Readers get lost. Story is more important than words.",
+      "judgedCovered": [
+        3
+      ],
+      "judgedContradicted": [
+        0
+      ]
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "ease",
+      "goldEase": 4,
+      "text": "Literature aids learning, engaging readers in story beyond rules. Immersion makes language clear, story over words."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "ease",
+      "goldEase": 4,
+      "text": "Literature helps learning, drawing readers into stories past rules. Being absorbed makes language plain, story beats words."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "ease",
+      "goldEase": 3,
+      "text": "Literature helps learning by engaging, shifting focus from rules to story. Immersion makes language clear, prioritizing plot above words."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "ease",
+      "goldEase": 3,
+      "text": "Literature aids study by involving, changing focus from mechanics to plot. Being absorbed makes words plain, valuing story over terms."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "ease",
+      "goldEase": 2,
+      "text": "Literature aids language learning through reader engagement, refocusing from mechanical words to narrative immersion, making language transparent."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "ease",
+      "goldEase": 2,
+      "text": "Through reader involvement, literature supports language learning, shifting focus from mechanical words to story immersion, making language transparent."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "ease",
+      "goldEase": 1,
+      "text": "Literary engagement facilitates linguistic acquisition through reorientation from mechanical particulars to narrative progression, fostering reader immersion and idiom transparency."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "ease",
+      "goldEase": 1,
+      "text": "Textual involvement propels idiomatic proficiency via diversion from lexical components to fictive trajectory, engendering participant engrossment and speech clarity."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "brevity",
+      "goldBrevity": 4,
+      "targetLen": 15,
+      "text": "Literature helps learning by engaging readers in stories. Language is clear; story more important than words."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "brevity",
+      "goldBrevity": 4,
+      "targetLen": 15,
+      "text": "Reading helps language. It engages readers, shifting focus to stories. Language clear; story more than words."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "brevity",
+      "goldBrevity": 3,
+      "targetLen": 25,
+      "text": "Literature helps language learning by engaging readers, shifting focus from rules to story, not just words. Readers get immersed, making language clear."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "brevity",
+      "goldBrevity": 3,
+      "targetLen": 25,
+      "text": "Reading books helps learning by making readers interested, changing focus from grammar to story, not words. Readers get immersed, making language clear."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "brevity",
+      "goldBrevity": 2,
+      "targetLen": 35,
+      "text": "Literature helps language learning by making readers interested. It shifts focus from grammar to story and characters. Readers get into the book, making language clear. Learning with books is more about the story, less about words."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "brevity",
+      "goldBrevity": 2,
+      "targetLen": 35,
+      "text": "Books help learn language as readers become engaged. It moves attention from rules to story and characters. Readers are drawn into the text, so language is clear. With books, learning is more about the story, not just words."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "brevity",
+      "goldBrevity": 1,
+      "targetLen": 48,
+      "text": "Literature helps students learn language. It makes readers engaged with the text. This shifts focus from rules to the story and characters. Readers get drawn into the book. The language then becomes clear and easy. Learning is more about the story, not just individual words."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "brevity",
+      "goldBrevity": 1,
+      "targetLen": 48,
+      "text": "Literature helps people learn a language better. It makes them engaged. This moves their focus from language mechanics to story and characters. People get pulled into the text. The language becomes transparent and simple. Learning is more about the story development and less about specific words."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "verbatim",
+      "text": "Literature can be helpful in the language learning process because of the it fosters in readers. Core language teaching materials must concentrate on how a"
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_31",
+      "series": "verbatim",
+      "text": "process of learning is essentially analytic, piecemeal, and, at the level of the personality, fairly superficial. Engaging imaginatively with literature enables learners to shift the"
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "k": 4,
+      "n": 4,
+      "text": "Understanding emotions is important for groups. Skilled people show feelings clearly. This helps communication, cooperation, conflict solution, and good function.",
+      "judgedCovered": [
+        0,
+        2
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.5
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "k": 4,
+      "n": 4,
+      "text": "Knowing emotions is important in groups. Skilled people show feelings well. This aids communication, cooperation, conflict solving, and group function.",
+      "judgedCovered": [
+        0,
+        2
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.5
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "k": 4,
+      "n": 4,
+      "text": "Good emotion understanding is key for groups. Able people state feelings clearly. This helps talking, teamwork, problem fixing, and group success.",
+      "judgedCovered": [
+        0,
+        2
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.5
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1,
+        2
+      ],
+      "k": 3,
+      "n": 4,
+      "text": "Knowing emotions is good for groups. Skilled people show feelings well. This helps groups talk and work together.",
+      "judgedCovered": [
+        2
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.25
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1,
+        2
+      ],
+      "k": 3,
+      "n": 4,
+      "text": "Understanding feelings is important in groups. Emotionally skilled people express feelings well. This helps groups talk and work together.",
+      "judgedCovered": [
+        0,
+        2
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.5
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1,
+        2
+      ],
+      "k": 3,
+      "n": 4,
+      "text": "Understanding emotions is key for groups. Skilled people show feelings clearly. This helps group members talk and cooperate.",
+      "judgedCovered": [
+        0,
+        2
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.5
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1
+      ],
+      "k": 2,
+      "n": 4,
+      "text": "Understanding emotions is very important in groups. People good with feelings express them clearly and correctly. This helps a lot.",
+      "judgedCovered": [
+        0,
+        1
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.5
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1
+      ],
+      "k": 2,
+      "n": 4,
+      "text": "It is very important to understand emotions in groups. People who are skilled in emotion show their feelings clearly and well.",
+      "judgedCovered": [
+        0,
+        1
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.5
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1
+      ],
+      "k": 2,
+      "n": 4,
+      "text": "Knowing emotions well is key for groups. People with good emotion skills express their feelings clearly and truly. This is helpful.",
+      "judgedCovered": [
+        0,
+        1
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.5
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "coverage",
+      "specCovered": [
+        0
+      ],
+      "k": 1,
+      "n": 4,
+      "text": "It is very important to understand emotions. This skill really matters when people are together in a group setting.",
+      "judgedCovered": [
+        0
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.25
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "coverage",
+      "specCovered": [
+        0
+      ],
+      "k": 1,
+      "n": 4,
+      "text": "Knowing what emotions are is very important. It really matters for situations where people are together in a group.",
+      "judgedCovered": [
+        0
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.25
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "coverage",
+      "specCovered": [
+        0
+      ],
+      "k": 1,
+      "n": 4,
+      "text": "Understanding emotions is very important. This is especially true for groups. Knowing how others feel is key.",
+      "judgedCovered": [
+        0
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.25
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "contradict",
+      "specContradicted": [
+        0
+      ],
+      "text": "Understanding emotions is unimportant in groups. Skilled people express feelings clearly. This helps groups communicate, cooperate, and solve conflicts well.",
+      "judgedCovered": [],
+      "judgedContradicted": [
+        0
+      ]
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "contradict",
+      "specContradicted": [
+        0
+      ],
+      "text": "Knowing emotions is unimportant in groups. Skilled people show feelings clearly. This helps groups talk, work well, and solve problems.",
+      "judgedCovered": [],
+      "judgedContradicted": [
+        0
+      ]
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "contradict",
+      "specContradicted": [
+        0
+      ],
+      "text": "Understanding feelings is unimportant in groups. Skilled people show feelings well. This helps groups communicate, cooperate, and solve problems.",
+      "judgedCovered": [],
+      "judgedContradicted": [
+        0
+      ]
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "ease",
+      "goldEase": 4,
+      "text": "Knowing feelings is key for groups. Skilled people share feelings well, helping groups talk, work together, and solve problems better."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "ease",
+      "goldEase": 4,
+      "text": "Being good at emotions matters for groups. Good people show feelings well. This aids group talk, team work, and fixing problems."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "ease",
+      "goldEase": 3,
+      "text": "Understanding emotions is key in groups. Skilled people express feelings clearly, helping communication, cooperation, conflict resolution, and group function."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "ease",
+      "goldEase": 3,
+      "text": "Knowing emotions is vital in groups. Those good at it express feelings clearly, aiding better communication, teamwork, conflict solving, and group performance."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "ease",
+      "goldEase": 2,
+      "text": "Understanding emotions is vital in groups. Skilled people accurately express feelings, facilitating communication, cooperation, conflict resolution, and improved group functioning."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "ease",
+      "goldEase": 2,
+      "text": "Emotional comprehension is paramount in groups; skilled individuals express feelings precisely, fostering communication, cooperation, conflict resolution, and enhanced group performance."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "ease",
+      "goldEase": 1,
+      "text": "Affective comprehension is paramount in collective settings, facilitating precise emotional articulation, thereby enhancing group communication, collaboration, conflict resolution, and functionality."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "ease",
+      "goldEase": 1,
+      "text": "Emotional cognizance holds pivotal import within communal milieus, enabling accurate affective explication, thus augmenting intergroup discourse, collaboration, dispute amelioration, and efficacy."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "brevity",
+      "goldBrevity": 4,
+      "targetLen": 15,
+      "text": "Emotion understanding helps groups. Skilled people show feelings well, improving talks, teamwork, and problem-solving."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "brevity",
+      "goldBrevity": 4,
+      "targetLen": 15,
+      "text": "Understanding emotions is key for groups. Skilled people show feelings, helping talks, cooperation, and solving issues."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "brevity",
+      "goldBrevity": 3,
+      "targetLen": 25,
+      "text": "Knowing feelings is important in groups. Skilled people show feelings clearly. This helps groups talk, cooperate, solve problems, and work well. It makes groups better."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "brevity",
+      "goldBrevity": 3,
+      "targetLen": 25,
+      "text": "Understanding feelings helps groups. Skilled people show emotions clearly. This helps members talk, work together, solve problems, and make groups much better."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "brevity",
+      "goldBrevity": 2,
+      "targetLen": 35,
+      "text": "Understanding feelings is important in groups. People who are good at feelings show them clearly. This helps group members talk and work together well. It makes solving problems good and helps groups work better."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "brevity",
+      "goldBrevity": 2,
+      "targetLen": 35,
+      "text": "Knowing feelings is very important for groups. Skilled people show their feelings clearly and well. This helps group members talk and work together. It makes solving problems good and helps groups do better."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "brevity",
+      "goldBrevity": 1,
+      "targetLen": 48,
+      "text": "Understanding emotions is very important for groups. People who understand emotions express their feelings clearly. This skill helps group members talk to each other and work well together. It also helps solve problems in a good way. This makes the group work better."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "brevity",
+      "goldBrevity": 1,
+      "targetLen": 48,
+      "text": "Knowing emotions is key for groups. Skilled people show feelings clearly and correctly. This skill makes group members communicate well. It also helps them cooperate better. This leads to good problem solving and stronger group work."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "verbatim",
+      "text": "The ability to understand emotions―to have a diverse emotion vocabulary and to understand the causes and consequences of emotion―is particularly relevant in group settings. Individuals"
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_22",
+      "series": "verbatim",
+      "text": "and thus, may facilitate clear communication between co-workers. Furthermore, they may be more likely to act in ways that accommodate their own needs as well"
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "k": 4,
+      "n": 4,
+      "text": "Most people believe games stop learning. Games attract student attention well. We must make games for learning goals. Such games use focus for school.",
+      "judgedCovered": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 1
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "k": 4,
+      "n": 4,
+      "text": "Many think games block school. Games hold students' focus strongly. We should create games linked to lessons. These games use attention for teaching.",
+      "judgedCovered": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 1
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "k": 4,
+      "n": 4,
+      "text": "Students often think games hurt learning. Games get their attention easily. We need to build games with learning goals. These can use focus for study.",
+      "judgedCovered": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 1
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1,
+        2
+      ],
+      "k": 3,
+      "n": 4,
+      "text": "Many people think games stop learning. But games get students' attention well. So, we should make games that help students learn things.",
+      "judgedCovered": [
+        0,
+        1,
+        2
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.75
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1,
+        2
+      ],
+      "k": 3,
+      "n": 4,
+      "text": "Most people believe games hurt study. Games really grab students' focus. We need to create games linked to school goals.",
+      "judgedCovered": [
+        0,
+        1,
+        2
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.75
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1,
+        2
+      ],
+      "k": 3,
+      "n": 4,
+      "text": "People often say games prevent learning. But games hold kids' attention well. So, we should develop games connected to learning outcomes.",
+      "judgedCovered": [
+        0,
+        1,
+        2
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.75
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1
+      ],
+      "k": 2,
+      "n": 4,
+      "text": "Most people think video games stop students from learning. Games are very good at getting students' attention and keeping it.",
+      "judgedCovered": [
+        0,
+        1
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.5
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1
+      ],
+      "k": 2,
+      "n": 4,
+      "text": "Students often do not learn because of video games, many people say. Games are good at catching and holding their focus.",
+      "judgedCovered": [
+        0,
+        1
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.5
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "coverage",
+      "specCovered": [
+        0,
+        1
+      ],
+      "k": 2,
+      "n": 4,
+      "text": "People think video games stop students from learning well. Games really grab and keep students' attention easily.",
+      "judgedCovered": [
+        0,
+        1
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.5
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "coverage",
+      "specCovered": [
+        0
+      ],
+      "k": 1,
+      "n": 4,
+      "text": "Many people believe video games stop students from studying well. They think games are bad for school.",
+      "judgedCovered": [
+        0
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.25
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "coverage",
+      "specCovered": [
+        0
+      ],
+      "k": 1,
+      "n": 4,
+      "text": "Most people think video games hurt students' ability to learn. Games often stop children from studying.",
+      "judgedCovered": [
+        0
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.25
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "coverage",
+      "specCovered": [
+        0
+      ],
+      "k": 1,
+      "n": 4,
+      "text": "People usually say video games make it hard for students to learn. They believe games stop learning.",
+      "judgedCovered": [
+        0
+      ],
+      "judgedContradicted": [],
+      "goldCoverage": 0.25
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "contradict",
+      "specContradicted": [
+        0
+      ],
+      "text": "Most think games help students learn. Games hold attention well. Develop games for learning. They use attention to teach.",
+      "judgedCovered": [
+        1,
+        2,
+        3
+      ],
+      "judgedContradicted": [
+        0
+      ]
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "contradict",
+      "specContradicted": [
+        0
+      ],
+      "text": "Most people think games help learning. Games grab attention easily. Develop games for learning. They can use attention to educate.",
+      "judgedCovered": [
+        1,
+        2,
+        3
+      ],
+      "judgedContradicted": [
+        0
+      ]
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "contradict",
+      "specContradicted": [
+        0
+      ],
+      "text": "Most think games help students learn. Games hold attention well. We must make games for learning. They can teach students.",
+      "judgedCovered": [
+        1,
+        2
+      ],
+      "judgedContradicted": [
+        0
+      ]
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "ease",
+      "goldEase": 4,
+      "text": "Many think games stop learning. Games get focus. We need school games that use this focus for learning."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "ease",
+      "goldEase": 4,
+      "text": "Most believe games hurt study. Games hold attention. We need learning games that use their focus to teach."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "ease",
+      "goldEase": 3,
+      "text": "People think games stop learning. Games grab attention; we should make learning games using their power for education."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "ease",
+      "goldEase": 3,
+      "text": "Most believe games stop learning. Games grab attention; we must create learning games using this power for schooling."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "ease",
+      "goldEase": 2,
+      "text": "Most believe games hinder student learning, yet their attention-holding power should be harnessed by developing goal-connected educational games."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "ease",
+      "goldEase": 2,
+      "text": "It is commonly thought games obstruct learning, but their attention-grabbing capacity should be utilized through developing pedagogically linked games."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "ease",
+      "goldEase": 1,
+      "text": "Prevalent perception posits games as learning impediments; yet, their potent attentional captivation necessitates pedagogic alignment and leveraging for educational advancement."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "ease",
+      "goldEase": 1,
+      "text": "Common apprehension views games as learning obstructions; nevertheless, their powerful focus-capture demands pedagogical integration and exploitation for academic progress."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "brevity",
+      "goldBrevity": 4,
+      "targetLen": 15,
+      "text": "People think games stop learning. Games hold attention. Make learning games; use attention for education."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "brevity",
+      "goldBrevity": 4,
+      "targetLen": 15,
+      "text": "Games often stop learning, but grab attention. We should make learning games using this attention for school."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "brevity",
+      "goldBrevity": 3,
+      "targetLen": 25,
+      "text": "People think games stop learning. Games hold student attention well. We should make games for learning. These games can use attention for school."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "brevity",
+      "goldBrevity": 3,
+      "targetLen": 25,
+      "text": "Most think games stop learning. Games hold student focus. We should make games for learning goals. Such games can use their power for education."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "brevity",
+      "goldBrevity": 2,
+      "targetLen": 35,
+      "text": "People think games stop learning. But games grab attention well. We should make new games that link to school lessons. These games can use their focus power to help students learn. This way, students can enjoy and study."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "brevity",
+      "goldBrevity": 2,
+      "targetLen": 35,
+      "text": "Most people think games stop learning. But games really get attention. We must make games that connect to study goals. These games can use their attention power for teaching. This way, students can play and learn easily."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "brevity",
+      "goldBrevity": 1,
+      "targetLen": 48,
+      "text": "Many people think video games stop students from learning well. But games are very good at getting and keeping student attention. We should make new games. These games must connect to school learning goals. Then, these games can use their strong attention power to help students learn."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "brevity",
+      "goldBrevity": 1,
+      "targetLen": 48,
+      "text": "Most people believe video games stop students from learning well. Games are good at holding students' attention. We should develop new games. These games must link to students' school goals. Then, games can use their power to get attention and help students learn more."
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "verbatim",
+      "text": "We almost universally accept that playing video games is at best a pleasant break from a student’s learning and more often what prevents a student"
+    },
+    {
+      "passageId": "CSAT_EVEN_2025_20",
+      "series": "verbatim",
+      "text": "can. And yet once they have our focus, they rarely seem to offer anything meaningful to help students grow in their lives outside the games."
+    }
+  ]
+}
