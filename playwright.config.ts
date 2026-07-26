@@ -23,6 +23,9 @@ export default defineConfig({
     env: {
       PARAPHRASE_FAKE_EMBED: "1",
       PARAPHRASE_LLM: "off",
+      // next start 는 .env.local 을 자동으로 읽는다. 키를 비워 덮어써서
+      // 테스트가 실수로 실제 API 를 때리는 일이 없게 한다.
+      GEMINI_API_KEY: "",
       TURSO_DATABASE_URL: "file:./e2e.db",
       NODE_ENV: "production",
     },

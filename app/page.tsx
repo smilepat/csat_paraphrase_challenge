@@ -32,6 +32,15 @@ export default function Home() {
         </Link>
       </div>
 
+      <div className="mt-4 flex flex-wrap gap-3 text-sm">
+        <Link href="/admin/passages" className="font-bold text-[var(--color-brand)]">
+          지문 검수·승인
+        </Link>
+        <Link href="/admin/passages/new" className="font-bold text-[var(--color-brand)]">
+          지문 직접 넣기
+        </Link>
+      </div>
+
       <div className="card mt-6 p-6">
         <h2 className="font-bold">기기 없이 진행하기</h2>
         <p className="mt-2 text-sm text-[var(--color-muted)]">

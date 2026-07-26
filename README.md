@@ -18,9 +18,13 @@ npm run dev
 ```
 
 1. `/admin/passages` 에서 명제·모범 답안을 확인하고 **승인**
+   (자동 점검이 지적 없는 지문을 골라 주므로 일괄 승인도 가능. 118개 중 115개가 무지적)
 2. `/host` 에서 지문·목표 단어 수를 고르고 방 생성 → 6자리 코드
 3. 학생은 `/join` 에서 코드 입력
 4. 교사 화면에서 라운드 시작 → 마감하고 채점 → 결과 공개
+
+교과서·부교재 지문은 `/admin/passages/new` 에서 직접 넣을 수 있습니다 —
+붙여넣으면 핵심 명제·모범 답안을 만들어 주고, 같은 검수 경로를 거칩니다.
 
 기기를 못 쓰는 교실용으로 원래의 단일 HTML 판이 `/standalone.html` 에 남아 있습니다.
 
@@ -48,6 +52,7 @@ npm test          # 채점 순수 함수 단위 테스트 30개
 npm run test:e2e  # 수업 전 구간 (외부 API 없이, 가짜 임베딩)
 npm run calibrate # 채점 품질 회귀 (실제 API 사용)
 npm run typecheck
+npx vite-node scripts/audit-passages.mjs  # 검수 자동 점검 요약
 ```
 
 ## 비용 관리

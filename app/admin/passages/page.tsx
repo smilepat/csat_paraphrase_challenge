@@ -18,7 +18,15 @@ export default async function AdminPassagesPage({
 
   return (
     <main className="mx-auto max-w-[900px] px-5 py-8">
-      <h1 className="text-2xl font-bold">지문 검수</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">지문 검수</h1>
+        <a
+          href="/admin/passages/new"
+          className="rounded-xl bg-[var(--color-brand)] px-4 py-2 text-sm font-bold text-white"
+        >
+          지문 직접 넣기
+        </a>
+      </div>
       <p className="mt-2 text-sm text-[var(--color-muted)]">
         핵심 명제와 모범 답안이 채점 기준이 됩니다. 명제가 부정확하면 채점 전체가 흔들리므로,
         확인·수정한 뒤 승인한 지문만 수업에 노출됩니다.

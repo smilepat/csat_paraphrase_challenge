@@ -10,6 +10,10 @@
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
 import { embedBatch } from "@/lib/gemini"
+import { auditPassage, auditSeverity, type AuditIssue } from "@/lib/scoring/audit"
+import freqJson from "@/data/freq-rank.json"
+
+const freq = freqJson as Record<string, number>
 
 export interface ReviewPassage {
   id: string
@@ -22,6 +26,9 @@ export interface ReviewPassage {
   propositions: string[]
   modelAnswers: string[]
   reviewStatus: string
+  /** 자동 점검 결과. 사람이 볼 순서를 정하는 용도지, 승인을 대신하지 않는다. */
+  issues: AuditIssue[]
+  severity: "clean" | "warn" | "error"
 }
 
 function parseJson<T>(v: unknown, fallback: T): T {
@@ -42,18 +49,52 @@ export async function listPassages(status: string): Promise<ReviewPassage[]> {
           ORDER BY difficulty_score, id`,
     args: [status],
   })
-  return rows.map((r) => ({
-    id: String(r.id),
-    title: String(r.title),
-    body: String(r.body),
-    wordCount: Number(r.word_count),
-    topic: r.topic ? String(r.topic) : null,
-    questionType: r.question_type ? String(r.question_type) : null,
-    difficultyScore: r.difficulty_score !== null ? Number(r.difficulty_score) : null,
-    propositions: parseJson<string[]>(r.propositions, []),
-    modelAnswers: parseJson<string[]>(r.model_answers, []),
-    reviewStatus: String(r.review_status),
-  }))
+  const out = rows.map((r) => {
+    const propositions = parseJson<string[]>(r.propositions, [])
+    const modelAnswers = parseJson<string[]>(r.model_answers, [])
+    const body = String(r.body)
+    // raw 상태는 아직 명제가 없으니 점검할 게 없다.
+    const issues = propositions.length
+      ? auditPassage({ body, propositions, modelAnswers, freq })
+      : []
+    return {
+      id: String(r.id),
+      title: String(r.title),
+      body,
+      wordCount: Number(r.word_count),
+      topic: r.topic ? String(r.topic) : null,
+      questionType: r.question_type ? String(r.question_type) : null,
+      difficultyScore: r.difficulty_score !== null ? Number(r.difficulty_score) : null,
+      propositions,
+      modelAnswers,
+      reviewStatus: String(r.review_status),
+      issues,
+      severity: auditSeverity(issues),
+    }
+  })
+
+  // 지적이 많은 것부터. 교사의 눈이 위험한 지문으로 먼저 가야 한다.
+  const rank = { error: 0, warn: 1, clean: 2 } as const
+  return out.sort((a, b) => rank[a.severity] - rank[b.severity] || b.issues.length - a.issues.length)
+}
+
+/**
+ * 자동 점검에서 지적이 없는 지문들을 한꺼번에 승인한다.
+ *
+ * 기준 임베딩은 만들지 않는다 — 첫 채점 때 lazy 로 만들어지므로,
+ * 115개를 승인하려고 임베딩 900여 건을 미리 부를 이유가 없다.
+ */
+export async function approveMany(ids: string[]): Promise<number> {
+  if (!ids.length) return 0
+  const placeholders = ids.map(() => "?").join(",")
+  const res = await db.execute({
+    sql: `UPDATE pc_passages SET review_status = 'approved', updated_at = datetime('now')
+          WHERE id IN (${placeholders}) AND review_status != 'approved'`,
+    args: ids,
+  })
+  revalidatePath("/admin/passages")
+  revalidatePath("/host")
+  return res.rowsAffected
 }
 
 export async function statusCounts(): Promise<Record<string, number>> {

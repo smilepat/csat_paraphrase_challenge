@@ -29,13 +29,12 @@ test("교사가 지문을 승인하고 방을 열면 학생이 참여해 채점�
 
   // ---- 1. 검수·승인 ----
   await teacherPage.goto("/admin/passages?status=draft")
-  const firstCard = teacherPage.locator("section.card").first()
+  const firstCard = teacherPage.getByTestId("passage-card").first()
   await expect(firstCard).toBeVisible()
+  const passageId = (await firstCard.getAttribute("data-passage-id"))!
   // 승인 대상 지문의 원문을 확보해 둔다(복붙 가드 검증용)
   await firstCard.getByText("지문 원문").click()
   const passageBody = (await firstCard.locator("p.whitespace-pre-wrap").innerText()).trim()
-  const meta = await firstCard.locator("span.text-sm").first().innerText()
-  const passageId = meta.split("·")[0].trim()
   await firstCard.getByRole("button", { name: "승인" }).click()
   await expect(teacherPage.getByRole("link", { name: /승인됨 [1-9]/ })).toBeVisible()
 
@@ -145,4 +144,40 @@ test("권한 없는 브라우저는 교사 화면에 들어가지 못한다", as
 
   await owner.close()
   await stranger.close()
+})
+
+test("교사가 직접 넣은 지문이 저장되고, 생성 실패는 안내로 이어진다", async ({ page }) => {
+  // 이 실행에는 API 키가 없다(config 에서 비움) → 명제 자동 생성은 실패해야 하고,
+  // 그래도 지문은 저장돼야 한다. 저장까지 같이 날아가면 교사가 입력을 통째로 잃는다.
+  const body = Array.from({ length: 12 }, (_, i) =>
+    `Sentence number ${i + 1} explains one more idea about why regular sleep helps students remember what they studied during the day.`,
+  ).join(" ")
+
+  await page.goto("/admin/passages/new")
+  await page.getByPlaceholder("예: Lesson 5 — Why We Sleep").fill("E2E 교사 지문")
+  await page.getByPlaceholder("Paste the English passage here.").fill(body)
+  await page.getByRole("button", { name: /저장하고 채점 기준 만들기/ }).click()
+
+  await expect(page.getByText("지문을 저장했습니다")).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByText(/명제 자동 생성에 실패했습니다/)).toBeVisible()
+
+  // 명제가 없으므로 '보강 전(raw)' 목록에 들어간다
+  await page.goto("/admin/passages?status=raw")
+  await expect(page.getByRole("link", { name: /보강 전 [1-9]/ })).toBeVisible()
+})
+
+test("너무 짧은 지문은 저장 버튼이 잠긴다", async ({ page }) => {
+  await page.goto("/admin/passages/new")
+  await page.getByPlaceholder("예: Lesson 5 — Why We Sleep").fill("짧은 지문")
+  await page.getByPlaceholder("Paste the English passage here.").fill("This passage is far too short.")
+  await expect(page.getByText(/^6단어 ·/)).toBeVisible()
+  await expect(page.getByRole("button", { name: /저장하고 채점 기준 만들기/ })).toBeDisabled()
+})
+
+test("검수 화면이 자동 점검 결과와 일괄 승인을 보여준다", async ({ page }) => {
+  await page.goto("/admin/passages?status=draft")
+  await expect(page.getByText(/자동 점검 —/)).toBeVisible()
+  await expect(page.getByRole("button", { name: /지적 없는 \d+개 한꺼번에 승인/ })).toBeVisible()
+  // 지적 없는 지문에는 배지가 붙는다
+  await expect(page.getByText("지적 없음").first()).toBeVisible()
 })

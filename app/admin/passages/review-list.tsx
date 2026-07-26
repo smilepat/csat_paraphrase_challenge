@@ -3,17 +3,83 @@
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import {
-  approvePassage, rejectPassage, savePassage, unapprovePassage, type ReviewPassage,
+  approveMany, approvePassage, rejectPassage, savePassage, unapprovePassage,
+  type ReviewPassage,
 } from "@/app/actions/admin"
 import { wordCount } from "@/lib/scoring/text"
 
 export default function ReviewList({ passages }: { passages: ReviewPassage[] }) {
+  const router = useRouter()
+  const [busy, setBusy] = useState(false)
+  const [note, setNote] = useState<string | null>(null)
+
+  const clean = passages.filter((p) => p.severity === "clean" && p.reviewStatus !== "approved")
+  const flagged = passages.filter((p) => p.severity !== "clean")
+
+  async function bulkApprove() {
+    setBusy(true)
+    try {
+      const n = await approveMany(clean.map((p) => p.id))
+      setNote(`${n}개를 승인했습니다.`)
+      router.refresh()
+    } catch (e) {
+      setNote((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="mt-5 space-y-4">
+      {passages.length > 0 && (
+        <section className="card p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="text-sm">
+              자동 점검 — <strong>지적 없음 {passages.filter((p) => p.severity === "clean").length}</strong>
+              {" · "}경고 {passages.filter((p) => p.severity === "warn").length}
+              {" · "}오류 {passages.filter((p) => p.severity === "error").length}
+              {flagged.length > 0 && (
+                <span className="text-[var(--color-muted)]"> · 지적 있는 지문을 위로 올렸습니다</span>
+              )}
+            </div>
+            {clean.length > 0 && (
+              <button
+                onClick={bulkApprove}
+                disabled={busy}
+                className="rounded-xl bg-[var(--color-good)] px-4 py-2 text-sm font-bold text-white disabled:opacity-40"
+              >
+                {busy ? "승인 중..." : `지적 없는 ${clean.length}개 한꺼번에 승인`}
+              </button>
+            )}
+          </div>
+          <p className="mt-2 text-xs text-[var(--color-muted)]">
+            자동 점검은 기계가 확실히 잡을 수 있는 것만 봅니다(원문 발췌·중복·길이·어휘).
+            명제가 지문의 논지를 제대로 대표하는지는 판단하지 못하므로, 일괄 승인은 선생님의 선택입니다.
+          </p>
+          {note && <p className="mt-2 text-sm text-[var(--color-good)]">{note}</p>}
+        </section>
+      )}
+
       {passages.map((p) => (
         <PassageCard key={p.id} passage={p} />
       ))}
     </div>
+  )
+}
+
+function SeverityBadge({ severity }: { severity: ReviewPassage["severity"] }) {
+  if (severity === "clean") {
+    return <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs text-emerald-700">지적 없음</span>
+  }
+  const isError = severity === "error"
+  return (
+    <span
+      className={`rounded-full px-2.5 py-1 text-xs ${
+        isError ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-800"
+      }`}
+    >
+      {isError ? "오류" : "경고"}
+    </span>
   )
 }
 
@@ -48,7 +114,11 @@ function PassageCard({ passage }: { passage: ReviewPassage }) {
   }
 
   return (
-    <section className={`card p-5 ${done ? "opacity-50" : ""}`}>
+    <section
+      data-testid="passage-card"
+      data-passage-id={passage.id}
+      className={`card p-5 ${done ? "opacity-50" : ""}`}
+    >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <input
           value={title}
@@ -56,11 +126,27 @@ function PassageCard({ passage }: { passage: ReviewPassage }) {
           className="min-w-[240px] flex-1 rounded-lg border border-[var(--color-line)] px-3 py-1.5 font-bold"
         />
         <span className="text-sm text-[var(--color-muted)]">
+          <SeverityBadge severity={passage.severity} />{" "}
           {passage.id} · {passage.wordCount}단어
           {passage.questionType && ` · ${passage.questionType}`}
           {passage.difficultyScore !== null && ` · 난도 ${passage.difficultyScore.toFixed(1)}`}
         </span>
       </div>
+
+      {passage.issues.length > 0 && (
+        <ul className="mt-3 space-y-1">
+          {passage.issues.map((it, i) => (
+            <li
+              key={i}
+              className={`rounded-lg px-3 py-2 text-sm ${
+                it.level === "error" ? "bg-red-50 text-red-800" : "bg-amber-50 text-amber-900"
+              }`}
+            >
+              {it.message}
+            </li>
+          ))}
+        </ul>
+      )}
 
       <details className="mt-3">
         <summary className="cursor-pointer text-sm font-bold">지문 원문</summary>
