@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: 타입 검사
+        run: npm run typecheck
+
+      - name: 단위 테스트 (채점 순수 함수)
+        run: npm test
+
+      - name: 빌드
+        run: npm run build
+
+      - name: Playwright 브라우저 설치
+        run: npx playwright install --with-deps chromium
+
+      # E2E 는 외부 API 를 쓰지 않는다(가짜 임베딩 + 판정 LLM off).
+      # 신규 클론이라 local.db 가 없으므로 global-setup 이 최소 픽스처를 넣는다.
+      - name: E2E
+        run: npm run test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # 채점 품질 회귀는 실제 API 를 쓰므로 기본 CI 에서 돌리지 않는다.
+  # 채점 로직·임베딩 모델을 건드렸을 때 수동으로 실행한다.
+  calibration:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 캘리브레이션 (ρ 회귀 검사)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: npm run calibrate

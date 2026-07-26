@@ -204,12 +204,39 @@ export async function embed(text: string): Promise<number[]> {
 }
 
 /**
+ * 테스트 전용 결정론적 가짜 임베딩 (PARAPHRASE_FAKE_EMBED=1).
+ *
+ * E2E 가 실제 API 를 때리면 느리고, 돈이 들고, 네트워크에 흔들린다.
+ * 해시 기반 bag-of-words 벡터라 "같은 단어가 많으면 유사도가 높다"는 성질은
+ * 유지되므로 흐름 검증에는 충분하다.
+ * 점수의 절대값은 의미가 없다 — 채점 품질 검증은 npm run calibrate 가 한다.
+ */
+function fakeEmbedding(text: string, dim = 64): number[] {
+  const v = new Array(dim).fill(0)
+  for (const w of text.toLowerCase().match(/[a-z]+/g) ?? []) {
+    let h = 2166136261
+    for (let i = 0; i < w.length; i++) {
+      h ^= w.charCodeAt(i)
+      h = Math.imul(h, 16777619)
+    }
+    v[Math.abs(h) % dim] += 1
+  }
+  const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1
+  return v.map((x) => x / norm)
+}
+
+function useFakeEmbeddings(): boolean {
+  return process.env.PARAPHRASE_FAKE_EMBED === "1"
+}
+
+/**
  * 배치 임베딩. 학생 30명 답안을 요청 1~2회로 처리한다.
  * batchEmbedContents 는 요청당 100건 제한이 있어 청크로 나눈다.
  */
 export async function embedBatch(texts: string[]): Promise<number[][]> {
-  if (!apiKey()) throw new Error("GEMINI_API_KEY가 설정되지 않았습니다.")
   if (texts.length === 0) return []
+  if (useFakeEmbeddings()) return texts.map((t) => fakeEmbedding(t))
+  if (!apiKey()) throw new Error("GEMINI_API_KEY가 설정되지 않았습니다.")
   if (isOverDailyLimit()) throw new Error("Gemini 일일 호출 상한에 도달했습니다.")
 
   const out: number[][] = []

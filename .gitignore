@@ -2,6 +2,7 @@ node_modules/
 .next/
 out/
 *.db
+e2e.db*
 *.db-journal
 .env
 .env.local
@@ -10,3 +11,5 @@ out/
 /test-results/
 next-env.d.ts
 tsconfig.tsbuildinfo
+e2e.db
+e2e.db-*
