@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/* standalone.html 의 색 언어를 그대로 가져온다 — 교사가 이미 본 화면과 이어지도록. */
+@theme {
+  --color-ink: #1f2937;
+  --color-muted: #64748b;
+  --color-line: #dbe3ee;
+  --color-soft: #eef4ff;
+  --color-brand: #2563eb;
+  --color-team-red: #dc2626;
+  --color-good: #16a34a;
+  --color-warn: #d97706;
+  --font-sans: Arial, "Noto Sans KR", system-ui, sans-serif;
+}
+
+body {
+  background: #f4f7fb;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+/* 반복되는 카드/버튼은 유틸 조합 대신 여기서 한 번만 정의한다. */
+@utility card {
+  background: #fff;
+  border: 1px solid var(--color-line);
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgb(15 23 42 / 0.06);
+}
