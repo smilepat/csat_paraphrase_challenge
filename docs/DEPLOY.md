@@ -26,7 +26,7 @@ Vercel Hobby 플랜은 **프로덕션 URL 이 공개**입니다. Preview 만 Ver
 
 ## 2. 앱 비밀번호 (기본 제공)
 
-`middleware.ts` 가 `/admin/*` 과 `/host/*` 에 Basic 인증을 겁니다.
+`proxy.ts` 가 `/admin/*` 과 `/host/*` 에 Basic 인증을 겁니다.
 `TEACHER_PASSWORD` 를 설정하면 그 값으로 열립니다(사용자명은 아무거나).
 
 **운영에서 `TEACHER_PASSWORD` 를 설정하지 않으면 교사 경로는 503 으로 막힙니다.**

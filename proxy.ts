@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 
 // ============================================================
-// 교사 경로 보호
+// 교사 경로 보호 (Next 16 의 proxy 규약 — 구 middleware)
 //
 // /admin/* 과 /host/* 는 지문 원문을 그대로 보여준다. CSAT 기출이므로
 // 공개 URL 에 그냥 두면 안 된다. 학생 경로(/join, /r/*)는 6자리 코드로
@@ -32,7 +32,7 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0
 }
 
-export function middleware(req: NextRequest) {
+export default function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
   if (!PROTECTED.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     return NextResponse.next()
