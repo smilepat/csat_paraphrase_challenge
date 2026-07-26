@@ -181,3 +181,30 @@ test("검수 화면이 자동 점검 결과와 일괄 승인을 보여준다", a
   // 지적 없는 지문에는 배지가 붙는다
   await expect(page.getByText("지적 없음").first()).toBeVisible()
 })
+
+test("교사 경로는 인증 없이 열리지 않는다", async () => {
+  // Playwright 의 request 컨텍스트는 config 의 httpCredentials 를 물려받아
+  // 인증이 자동으로 붙는다(그래서 처음에 200 이 떴다). 순수 fetch 로 확인한다.
+  const base = "http://127.0.0.1:3123"
+
+  for (const path of ["/admin/passages", "/admin/passages/new", "/host"]) {
+    const res = await fetch(`${base}${path}`, { redirect: "manual" })
+    expect(res.status, `${path} 는 인증 없이 열리면 안 된다`).toBe(401)
+  }
+
+  // 비밀번호가 맞으면 통과한다
+  const ok = await fetch(`${base}/admin/passages`, {
+    headers: { authorization: `Basic ${Buffer.from("teacher:e2e-teacher-pw").toString("base64")}` },
+  })
+  expect(ok.status).toBe(200)
+
+  // 틀린 비밀번호는 막힌다
+  const bad = await fetch(`${base}/admin/passages`, {
+    headers: { authorization: `Basic ${Buffer.from("teacher:wrong").toString("base64")}` },
+  })
+  expect(bad.status).toBe(401)
+
+  // 학생 경로는 열려 있어야 한다 — 막으면 수업이 안 된다
+  expect((await fetch(`${base}/join`)).status).toBe(200)
+  expect((await fetch(`${base}/`)).status).toBe(200)
+})

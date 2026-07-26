@@ -24,11 +24,17 @@ Vercel Hobby 플랜은 **프로덕션 URL 이 공개**입니다. Preview 만 Ver
 
 학생 화면에도 지문은 나오지만, 6자리 코드를 알고 방이 `writing` 상태일 때만 나옵니다.
 
-## 2. 앱 비밀번호 (Hobby 에서 프로덕션을 쓸 때)
+## 2. 앱 비밀번호 (기본 제공)
 
-`middleware.ts` 를 두고 `TEACHER_PASSWORD` 를 설정하면 교사 경로에 Basic 인증이 걸립니다.
-기본 제공하지 않는 이유는, 비밀번호 한 개짜리 보호를 "안전하다"고 오해하기 쉬워서입니다.
-학교 밖에서도 쓸 계획이면 Pro + Deployment Protection 을 권합니다.
+`middleware.ts` 가 `/admin/*` 과 `/host/*` 에 Basic 인증을 겁니다.
+`TEACHER_PASSWORD` 를 설정하면 그 값으로 열립니다(사용자명은 아무거나).
+
+**운영에서 `TEACHER_PASSWORD` 를 설정하지 않으면 교사 경로는 503 으로 막힙니다.**
+"설정을 깜빡해서 지문이 공개된" 상태보다 "안 열려서 당황하는" 쪽이 낫다고 봤습니다.
+로컬 개발에서는 비밀번호 없이 통과합니다.
+
+비밀번호 하나짜리 보호라는 점은 분명히 해 둡니다. 여러 교사가 각자 계정으로 쓰거나
+학교 밖 노출이 걱정되면 Pro + Deployment Protection 쪽이 맞습니다.
 
 ## 3. 환경변수
 
@@ -43,6 +49,7 @@ GEMINI_EMBED_MODEL   gemini-embedding-2
 GEMINI_EMBED_DIM     768
 PARAPHRASE_LLM       on
 GEMINI_DAILY_LIMIT   2000
+TEACHER_PASSWORD     교사 화면 비밀번호 (운영에서 필수 — 없으면 /admin·/host 가 503)
 ```
 
 ⚠ `TURSO_AUTH_TOKEN` 을 복사할 때 줄바꿈이 섞이는 사고가 잦습니다. `lib/db.ts` 가
@@ -72,7 +79,8 @@ npx vercel --prod     # production — 1번 접근 제어를 끝낸 뒤에만
 
 ## 6. 배포 후 확인
 
-- [ ] `/admin/passages` 가 보호되는가 (로그인/비밀번호 없이 열리면 안 됨)
+- [ ] `curl -I <배포URL>/admin/passages` 가 401 인가 (인증 없이 200 이면 즉시 내릴 것)
+- [ ] 학생 경로 `/join` 은 인증 없이 200 인가
 - [ ] `curl -I <배포URL>` 에 `x-robots-tag: noindex, nofollow, noarchive` 가 있는가
 - [ ] `/join` 에서 실제 코드로 입장되는가 (폰 1대로 확인)
 - [ ] 한 라운드를 돌리고 `pc_api_usage` 에 호출 수가 기록되는가
