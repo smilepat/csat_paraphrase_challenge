@@ -6,14 +6,29 @@
 
 ## 1. 접근 제어 (필수)
 
-Vercel Hobby 플랜은 **프로덕션 URL 이 공개**입니다. Preview 만 Vercel Authentication
-으로 보호됩니다. 선택지는 셋입니다.
+**현재 상태 (2026-07-27 실측)**: 이 프로젝트는 팀 `prompt-improvement-dm-pat`(Pro)에
+있고, `ssoProtection = all_except_custom_domains` 가 걸려 있습니다.
+즉 `*.vercel.app` 주소는 **프로덕션까지 전부 Vercel 로그인**이 필요합니다.
 
-| 방법 | 필요 조건 | 접근 방식 |
+지문 유출 위험은 이 설정으로 이미 막혀 있습니다. 문제는 반대쪽입니다 —
+**학생도 못 들어옵니다.** 학생은 Vercel 계정이 없으니까요.
+
+수업에 쓰려면 둘 중 하나를 골라야 합니다.
+
+| 방법 | 학생 접근 | 지문 노출 위험 |
 |---|---|---|
-| Pro 플랜 + Deployment Protection(Standard) | 유료 | Vercel 계정으로 로그인한 사람만 |
-| Hobby + Preview 배포만 사용 | 없음 | Vercel 계정 로그인 필요. 교사 본인만 쓸 때 적합 |
-| 프로덕션 + 앱 자체 비밀번호 | 없음 | 아래 2번 미들웨어 |
+| **A. 커스텀 도메인 연결** | 도메인으로 자유롭게 입장 | 도메인은 SSO 예외라 공개됨. `/admin`·`/host` 는 `TEACHER_PASSWORD` 가 막음 |
+| **B. SSO 를 Preview 전용으로 변경** | 프로덕션 `.vercel.app` 으로 입장 | 위와 같음. 주소가 추측 가능하다는 점만 다름 |
+
+어느 쪽이든 **교사 경로는 `proxy.ts` 의 Basic 인증이 지킵니다**(아래 2번).
+학생 경로(`/`, `/join`, `/r/*`)는 열려야 하고, 지문은 6자리 코드를 알고 방이
+`writing` 상태일 때만 보입니다.
+
+바꾸는 법 (B):
+```bash
+# Vercel 대시보드 → Project → Settings → Deployment Protection
+# Vercel Authentication 을 "Only Preview Deployments" 로 변경
+```
 
 학생이 각자 기기로 들어와야 하므로 **학생 화면(`/join`, `/r/*`)은 열려 있어야** 합니다.
 보호가 필요한 건 지문 원문이 노출되는 경로입니다:
@@ -76,6 +91,18 @@ npm run db:enrich     # Gemini 호출 — 118지문에 약 24콜
 npx vercel            # preview
 npx vercel --prod     # production — 1번 접근 제어를 끝낸 뒤에만
 ```
+
+**실측 확인 (프리뷰 배포, Vercel 인증 우회 토큰으로 앱 계층만 검사):**
+
+| 경로 | 인증 없이 | 교사 비번 |
+|---|---|---|
+| `/`, `/join`, `/standalone.html` | 200 | — |
+| `/admin/passages`, `/host` | **401** | 200(DB 있을 때) |
+| 틀린 비번 | **401** | — |
+
+모든 응답에 `x-robots-tag: noindex, nofollow, noarchive` 확인.
+DB 미연결 상태에서는 교사 경로가 인증 통과 후 500 입니다 — `lib/db.ts` 가
+운영에서 env 없이 쿼리하면 명시적으로 실패하도록 만든 의도된 동작입니다.
 
 ## 6. 배포 후 확인
 

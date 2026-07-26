@@ -13,3 +13,5 @@ next-env.d.ts
 tsconfig.tsbuildinfo
 e2e.db
 e2e.db-*
+
+.vercel
