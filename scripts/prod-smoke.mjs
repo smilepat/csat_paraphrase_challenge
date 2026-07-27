@@ -11,9 +11,16 @@
 // 검사용으로 지문 1개를 승인했다가 끝나면 draft 로 되돌린다(검수 게이트 보존).
 // =========================================================================
 import { chromium } from "@playwright/test"
+import { loadEnv } from "./_shared.mjs"
+
+loadEnv() // .env.local 에서 TEACHER_PASSWORD 를 읽는다 (레포에 비밀번호를 넣지 않는다)
 
 const BASE = "https://csat-paraphrase-challenge.vercel.app"
-const PW = process.env.TEACHER_PW || "mw1wgTuZ3Z6p"
+const PW = process.env.TEACHER_PASSWORD
+if (!PW) {
+  console.error("TEACHER_PASSWORD 가 필요합니다 (.env.local 또는 환경변수).")
+  process.exit(2)
+}
 const creds = { username: "teacher", password: PW }
 const ANSWER = process.env.SMOKE_ANSWER
 if (!ANSWER) {

@@ -82,11 +82,16 @@ Vercel env 에 `TURSO_*` 등록 후 재배포했고, **프로덕션 실 라운�
 | 항목 | 위치 |
 |---|---|
 | `GEMINI_API_KEY` | 로컬 `.env.local` (gitignore), Vercel env(prod+preview) |
-| `TEACHER_PASSWORD` | **Vercel env 에만** 있습니다. 값이 필요하면 대시보드 또는 `vercel env pull` |
+| `TEACHER_PASSWORD` | 로컬 `.env.local`(git 제외) + Vercel env. 보려면 `grep TEACHER_PASSWORD .env.local` |
 | Vercel 프로젝트 | 팀 `prompt-improvement-dm-pat` / `csat-paraphrase-challenge` |
 | Turso | 미생성 (블로커 ①) |
 
-비밀번호를 바꾸려면 Vercel env 의 `TEACHER_PASSWORD` 만 교체하고 재배포하면 됩니다.
+비밀번호를 바꾸려면 Vercel env 의 `TEACHER_PASSWORD` 를 교체하고 **재배포**해야 합니다
+(env 만 바꾸면 기존 배포에는 반영되지 않습니다). 교체 후 옛 비번이 401 이 되는지 확인하세요.
+
+⚠ 초기 비밀번호를 대화와 `scripts/prod-smoke.mjs` 기본값에 노출한 적이 있어
+2026-07-27 에 교체했습니다. 옛 값은 무효지만 git 히스토리에는 남아 있습니다.
+스크립트는 이제 `.env.local` 에서 읽고, 레포에 비밀번호를 두지 않습니다.
 운영에서 이 값을 비우면 `/admin`·`/host` 가 **503** 으로 막힙니다(고의적 안전 기본값 —
 설정을 깜빡해 CSAT 원문이 열리는 것보다 낫다고 판단).
 
