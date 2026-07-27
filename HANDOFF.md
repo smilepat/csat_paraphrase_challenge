@@ -1,6 +1,6 @@
 # HANDOFF — 100-Word Paraphrase Challenge
 
-**최종 갱신** 2026-07-27 · **HEAD** `43a6d64` · **레포** `smilepat/csat_paraphrase_challenge` (private)
+**최종 갱신** 2026-07-27 · **HEAD** `67de2c1` · **레포** `smilepat/csat_paraphrase_challenge` (private)
 
 수능 기출 지문을 가장 짧고 쉬운 영어로 바꾸는 교실 활동 앱.
 단일 HTML 게임을 Next.js 16 앱으로 전환했고, 학생은 자기 기기로 제출하고 교사는
@@ -142,6 +142,13 @@ body `{key,value,type:"encrypted",target:["preview"]}`). 토큰은
    부정행위로 몰게 됩니다 — 이 게임이 장려하려는 바로 그 행동을. 표면 비교
    (최장 공통 연속 단어 + 내용어 자카드)로 합니다. 오탐 0/84 실측.
 
+6. **플래그가 붙은 제출은 교사 판단 전까지 어디에도 반영하지 않습니다**
+   (`lib/rooms.ts` 의 `reviewState`). 복붙의 원점수는 69.3 으로 여전히 높게 나옵니다 —
+   임베딩·규칙만 보면 실제로 "핵심을 다 담은 짧은 글"이기 때문입니다. 그래서 예전에는
+   순위 2위에 올랐습니다. 자동 0점 처리는 하지 않습니다(정당한 인용을 기계가 가려낼 수
+   없음). `counted`/`pending`/`rejected` 세 상태로 순위·팀점수·평균·학생 화면을 한꺼번에
+   통제합니다. **이 규칙을 지우면 베낀 답안이 다시 1위에 오릅니다.**
+
 **측정 방법론 교훈**: 총점 하나로 뭉뚱그려 재면 측정 도구의 결함이 채점기 성능처럼
 보입니다(v1 에서 실제로 그럴 뻔했습니다 — ρ 0.709 가 나왔는데 진단해 보니 정답
 순서가 애초에 신호에 없었습니다). 축을 하나씩만 움직인 데이터로 재고, 심판 LLM 의
@@ -157,11 +164,13 @@ app/actions/       host(방·전이·권한) / play(조인·제출·라운드채
 app/host, app/r, app/join, app/admin, app/reports   화면
 lib/scoring/       text·brevity·ease·guards·meaning·audit = 순수 함수 (테스트 대상)
                    index.ts 조립 / service.ts 는 I/O / verdict.ts 는 LLM 판정
-lib/               codes(ULID·6자리) db(Turso) gemini identity rooms
+lib/               codes(ULID·6자리) db(Turso) gemini identity
+                   rooms — 방 상태 전이 + reviewState(플래그 제출 반영 규칙)
 proxy.ts           교사 경로 Basic 인증 (Next 16 규약. 구 middleware)
 scripts/           schema·import·enrich·freq·calibrate·audit·live-check
 e2e/               Playwright 7개
 docs/              CALIBRATION.md(채점 근거) DEPLOY.md(배포)
+HANDOFF.md         이 문서(정본) · STATUS.md 는 repo-ops 자동화가 읽는 요약
 public/standalone.html   원래 단일 HTML — 기기 없는 교실용 폴백
 ```
 
@@ -190,6 +199,12 @@ public/standalone.html   원래 단일 HTML — 기기 없는 교실용 폴백
   `vite.config.ts` 한 곳으로 합쳤습니다.
 - **Node 의 `/tmp/x` 는 Windows 에서 `C:\tmp\x`**, Git Bash 의 `/tmp` 와 다른 곳입니다.
 - **Next 16 은 `middleware` 규약을 deprecated** 처리했습니다 → `proxy.ts`.
+- **원격 main 에 자동화가 직접 push 합니다** — `project-dashboard` 액션이 `STATUS.md` 를
+  넣습니다. push 가 거부되면 남의 작업이 아니라 이것일 가능성이 큽니다.
+  `git pull --rebase origin main` 후 다시 push 하세요.
+- **`vercel link` 가 비대화형에서 개인 계정을 스코프로 못 씁니다** — 팀
+  `prompt-improvement-dm-pat` 을 `--scope` 로 명시해야 합니다(기존 100개 프로젝트가
+  전부 이 팀에 있고 멤버는 1명입니다).
 
 ---
 
@@ -230,4 +245,10 @@ CI(`.github/workflows/ci.yml`)는 typecheck + 단위 + build + E2E 를 돌립니
   ρ 를 다시 재면 신뢰도가 한 단계 올라갑니다.
 - **지문 유형 확대** — 지금은 6개 유형(빈칸추론·요지·주제·제목·주장·함축)만 씁니다.
   넓히면 명제 구조가 달라 임계값 재조정이 필요합니다.
+- **실제 수업 1회 투입** — 지금까지의 검증은 전부 합성 데이터입니다. 실제 학생 답안이
+  들어와야만 드러나는 것들이 있습니다(빈 제출·한글 섞임·초성체·시간 초과 행동 등).
+  블로커 2개를 푼 뒤 한 반으로 먼저 돌려 보는 게 다음 단계입니다.
+
+코드로 더 할 수 있는 항목은 소진했습니다. 남은 것은 전부 사람의 판단(SSO·도메인),
+계정 작업(Turso 로그인), 또는 실제 학생 데이터가 있어야 진행됩니다.
 
