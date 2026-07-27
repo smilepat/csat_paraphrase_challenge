@@ -19,7 +19,7 @@
 | 채점 엔진 | **완료**, 축별 캘리브레이션 전체 PASS |
 | 지문 | CSAT 118개 적재·보강 완료. **승인은 0개** (사람이 눌러야 함) |
 | Vercel 배포 | 프로젝트 생성·env 등록·프리뷰 배포 완료. **DB 없어 교사 경로 500** |
-| 운영 투입 | **불가** — 아래 블로커 2개 |
+| 운영 투입 | **불가** — Turso DB 미생성(블로커 1개) |
 
 로컬에서는 전부 동작합니다. 막힌 건 배포 환경의 DB와 학생 접근 경로뿐입니다.
 
@@ -56,7 +56,7 @@ npm run dev
 
 ---
 
-## 3. 남은 블로커 2개
+## 3. 남은 블로커
 
 ### ① Turso DB — 배포본이 못 뜨는 직접 원인
 
@@ -94,20 +94,14 @@ npx vercel deploy --prod
 body `{key,value,type:"encrypted",target:["preview"]}`). 토큰은
 `%APPDATA%\com.vercel.cli\Data\auth.json`.
 
-### ② Vercel SSO 설정 — 학생이 못 들어옴
+### ② ~~Vercel SSO~~ — 해소됨 (2026-07-27)
 
-프로젝트는 팀 `prompt-improvement-dm-pat`(Pro)에 있고
-`ssoProtection = all_except_custom_domains` 입니다. 즉 `*.vercel.app` 은
-**프로덕션까지 Vercel 로그인 필요** → 지문 유출 위험은 이미 막혀 있지만
-**학생도 못 들어옵니다**(학생은 Vercel 계정이 없음).
+`ssoProtection` 을 `preview` 전용으로 바꿨습니다(Vercel API PATCH). 프로덕션
+`.vercel.app` 은 열려 있어 학생이 코드로 입장할 수 있습니다.
 
-둘 중 하나를 골라야 합니다. 대시보드 설정이라 코드로는 못 바꿉니다.
-
-- **A. 커스텀 도메인 연결** — 도메인은 SSO 예외. 학생 자유 입장.
-- **B. Deployment Protection → "Only Preview Deployments"** — 프로덕션 `.vercel.app` 개방.
-
-어느 쪽이든 `/admin`·`/host` 는 `proxy.ts` 의 Basic 인증이 지킵니다(프리뷰 배포에서
-401 실측 확인). 학생 경로(`/`, `/join`, `/r/*`)만 열립니다.
+**그래서 프로덕션에서 지문을 지키는 것은 `TEACHER_PASSWORD` 하나뿐입니다.**
+`/admin/*`·`/host/*` 만 막히고 학생 경로는 열려 있습니다. 비밀번호를 지우거나
+`proxy.ts` 를 건드리면 CSAT 원문이 그대로 공개됩니다.
 
 ---
 

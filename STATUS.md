@@ -31,22 +31,20 @@ pc: DESKTOP-A8ES4P0
 - [x] **플래그 제출 처리** — 교사 판단 전까지 순위·팀점수·평균에서 제외(복붙이 2위에 오르던 문제)
 - [x] Vercel 프로젝트·env(prod+preview)·프리뷰 배포 · 앱 계층 보호 401 실측
 - [ ] **Turso DB 생성** — 배포본이 못 뜨는 직접 원인 (블로커)
-- [ ] **Vercel SSO 조정** — 지금은 학생도 못 들어옴 (블로커)
+- [x] **Vercel SSO 조정** — `preview` 전용으로 변경 완료(프로덕션 개방, 학생 입장 가능)
 - [ ] 실제 수업 1회 투입 · 교사 감각 검증(사람 순위 vs 엔진 ρ)
 
 ## ⏭️ 다음에 할 일 (Next Actions)
 
 1. **Turso DB** — `wsl` → `~/.turso/turso auth login`(브라우저) → `db create csat-paraphrase`
    → URL·토큰을 Vercel env 에 등록 → `vercel deploy --prod`
-2. **학생 접근 열기** — 아래 결정 후 대시보드에서 설정
+2. ~~학생 접근 열기~~ — 완료
 3. `/admin/passages` 에서 무지적 115개 승인 (로컬은 지금 바로 가능)
 
 ## 🤔 결정 대기 (Decisions Needed)
 
-- **학생 접근 방식** — 현재 `ssoProtection=all_except_custom_domains` 라 `*.vercel.app` 은
-  프로덕션까지 Vercel 로그인 필요 → 학생 입장 불가.
-  **A. 커스텀 도메인 연결**(도메인은 SSO 예외) vs **B. SSO 를 Preview 전용으로 변경**.
-  어느 쪽이든 `/admin`·`/host` 는 `TEACHER_PASSWORD` 가 막는다.
+- ~~학생 접근 방식~~ → **B 선택, 적용 완료**(`ssoProtection=preview`).
+  프로덕션은 공개되고 `/admin`·`/host` 만 `TEACHER_PASSWORD` 가 막는다.
 - **지문 유형 확대 여부** — 지금은 6유형(빈칸추론·요지·주제·제목·주장·함축)만.
   넓히면 명제 구조가 달라 임계값 재조정 필요.
 

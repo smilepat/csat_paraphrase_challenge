@@ -6,9 +6,13 @@
 
 ## 1. 접근 제어 (필수)
 
-**현재 상태 (2026-07-27 실측)**: 이 프로젝트는 팀 `prompt-improvement-dm-pat`(Pro)에
-있고, `ssoProtection = all_except_custom_domains` 가 걸려 있습니다.
-즉 `*.vercel.app` 주소는 **프로덕션까지 전부 Vercel 로그인**이 필요합니다.
+**현재 설정 (2026-07-27 변경 완료)**: `ssoProtection = preview`.
+프로덕션 `.vercel.app` 은 **열려 있고**, Preview 배포만 Vercel 로그인을 요구합니다.
+학생이 코드로 입장할 수 있도록 사용자가 이 방식을 선택했습니다.
+
+따라서 프로덕션에서 지문 원문을 지키는 것은 **`proxy.ts` 의 `TEACHER_PASSWORD` 하나**입니다
+(`/admin/*`, `/host/*`). 학생 경로는 열려 있고, 지문은 6자리 코드를 알고 방이
+`writing` 상태일 때만 보입니다. 이 전제가 바뀌면 아래 표에서 다른 방식을 고르세요.
 
 지문 유출 위험은 이 설정으로 이미 막혀 있습니다. 문제는 반대쪽입니다 —
 **학생도 못 들어옵니다.** 학생은 Vercel 계정이 없으니까요.
