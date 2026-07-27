@@ -1,7 +1,7 @@
 ---
 project: csat_paraphrase_challenge
 status: active
-progress: 85
+progress: 92
 updated: 2026-07-27
 pc: DESKTOP-A8ES4P0
 ---
@@ -30,16 +30,17 @@ pc: DESKTOP-A8ES4P0
 - [x] **M7** Playwright E2E **7개** · CI(typecheck+단위+build+E2E) · noindex · `proxy.ts` 교사 경로 Basic 인증
 - [x] **플래그 제출 처리** — 교사 판단 전까지 순위·팀점수·평균에서 제외(복붙이 2위에 오르던 문제)
 - [x] Vercel 프로젝트·env(prod+preview)·프리뷰 배포 · 앱 계층 보호 401 실측
-- [ ] **Turso DB 생성** — 배포본이 못 뜨는 직접 원인 (블로커)
+- [x] **Turso DB** — 생성·스키마·지문 119개 이관·env 등록 완료
+- [x] **프로덕션 가동** — 실 라운드 통과(embed 2콜/verdict 1콜), 하이드레이션 결함 1건 수정
 - [x] **Vercel SSO 조정** — `preview` 전용으로 변경 완료(프로덕션 개방, 학생 입장 가능)
 - [ ] 실제 수업 1회 투입 · 교사 감각 검증(사람 순위 vs 엔진 ρ)
 
 ## ⏭️ 다음에 할 일 (Next Actions)
 
-1. **Turso DB** — `wsl` → `~/.turso/turso auth login`(브라우저) → `db create csat-paraphrase`
-   → URL·토큰을 Vercel env 에 등록 → `vercel deploy --prod`
+1. **지문 승인** — https://csat-paraphrase-challenge.vercel.app/admin/passages 에서
+   "지적 없는 116개 한꺼번에 승인". 승인 0개면 방을 만들 수 없다.
 2. ~~학생 접근 열기~~ — 완료
-3. `/admin/passages` 에서 무지적 115개 승인 (로컬은 지금 바로 가능)
+3. 실제 수업 1회 투입 — 폰(학생)·PC(교사)로 한 라운드
 
 ## 🤔 결정 대기 (Decisions Needed)
 

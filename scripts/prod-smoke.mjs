@@ -1,11 +1,25 @@
-// 프로덕션 실제 라운드 1회 — 실 Gemini·실 Turso 로 끝까지 도는지 확인.
-// 검사용으로 지문 1개를 승인하고, 끝나면 원래대로 draft 로 되돌린다.
+// =========================================================================
+// 프로덕션 실 라운드 점검 — 실제 Gemini·Turso 로 끝까지 도는지 확인한다.
+//
+// E2E(npm run test:e2e)는 가짜 임베딩으로 흐름만 본다. 이 스크립트는 배포본에서만
+// 드러나는 것(환경변수 누락·하이드레이션·서버리스 제약)을 잡는다.
+//   실제로 이걸로 두 건을 잡았다 — Vercel env 가 빈 값으로 저장된 것, React #418.
+//
+// 실행 (지문에 맞는 답안을 반드시 넣을 것 — 하드코딩하면 의미 0점이 나온다):
+//   SMOKE_ANSWER="..." node scripts/prod-smoke.mjs
+//
+// 검사용으로 지문 1개를 승인했다가 끝나면 draft 로 되돌린다(검수 게이트 보존).
+// =========================================================================
 import { chromium } from "@playwright/test"
 
 const BASE = "https://csat-paraphrase-challenge.vercel.app"
 const PW = process.env.TEACHER_PW || "mw1wgTuZ3Z6p"
 const creds = { username: "teacher", password: PW }
-const ANSWER = process.env.SMOKE_ANSWER || ""
+const ANSWER = process.env.SMOKE_ANSWER
+if (!ANSWER) {
+  console.error("SMOKE_ANSWER 가 필요합니다. 승인할 지문에 맞는 영어 요약을 넣으세요.")
+  process.exit(2)
+}
 
 const browser = await chromium.launch()
 const teacher = await browser.newContext({ httpCredentials: creds })

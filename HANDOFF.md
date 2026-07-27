@@ -17,9 +17,9 @@
 | 수업 전 구간 (검수→방→조인→제출→채점→리포트) | **완료**, E2E 7개 green |
 | 플래그 제출 처리 | 교사 판단 전까지 순위·팀점수·평균에서 제외 |
 | 채점 엔진 | **완료**, 축별 캘리브레이션 전체 PASS |
-| 지문 | CSAT 118개 적재·보강 완료. **승인은 0개** (사람이 눌러야 함) |
-| Vercel 배포 | 프로젝트 생성·env 등록·프리뷰 배포 완료. **DB 없어 교사 경로 500** |
-| 운영 투입 | **불가** — Turso DB 미생성(블로커 1개) |
+| 지문 | 로컬·원격 Turso 모두 **119개**(명제 보유 119). **승인 0개** — 사람이 눌러야 함 |
+| Vercel 배포 | **프로덕션 가동** https://csat-paraphrase-challenge.vercel.app · 실 라운드 통과 |
+| 운영 투입 | **가능** — 지문 승인만 남음 |
 
 로컬에서는 전부 동작합니다. 막힌 건 배포 환경의 DB와 학생 접근 경로뿐입니다.
 
@@ -56,43 +56,15 @@ npm run dev
 
 ---
 
-## 3. 남은 블로커
+## 3. 남은 일
 
-### ① Turso DB — 배포본이 못 뜨는 직접 원인
+### ① ~~Turso DB~~ — 해소됨 (2026-07-27)
 
-서버리스에는 로컬 SQLite 파일이 없습니다. `TURSO_DATABASE_URL` 이 없으면
-`lib/db.ts` 가 **쿼리 시점에 명시적으로 실패**합니다(의도된 동작, 로컬 재현 확인:
-`Turso 가 설정되지 않았습니다`). 그래서 배포본의 `/admin`·`/host` 는 인증을
-통과해도 500 입니다.
+`csat-paraphrase` DB 생성·스키마 적용·지문 119개 이관 완료(`npm run db:migrate`).
+Vercel env 에 `TURSO_*` 등록 후 재배포했고, **프로덕션 실 라운드가 통과**했다
+(`SMOKE_ANSWER="..." node scripts/prod-smoke.mjs`).
 
-WSL 의 turso CLI 토큰이 만료돼 있습니다(플랫폼 API 401 `Token is expired`).
-`turso auth login` 은 브라우저 OAuth라 사람이 해야 합니다.
-
-```bash
-wsl
-~/.turso/turso auth login                       # 브라우저 로그인
-~/.turso/turso db create csat-paraphrase
-~/.turso/turso db show csat-paraphrase --url    # → TURSO_DATABASE_URL
-~/.turso/turso db tokens create csat-paraphrase # → TURSO_AUTH_TOKEN
-```
-
-받은 뒤 이어서 할 일:
-
-```bash
-export TURSO_DATABASE_URL=libsql://...  TURSO_AUTH_TOKEN=...
-npm run db:schema && npm run db:import && npm run db:enrich
-# 또는 로컬 검수 결과를 그대로 옮기기(추천 — 재생성 비용 없음):
-#   local.db 의 pc_passages 에서 propositions / model_answers /
-#   review_status / ref_embedding 컬럼을 복사
-npx vercel env add TURSO_DATABASE_URL production   # preview 도 같이
-npx vercel env add TURSO_AUTH_TOKEN production
-npx vercel deploy --prod
-```
-
-⚠ `vercel env add` 가 `--value --yes` 를 줘도 프롬프트 안내만 반복하는 버그가 있었습니다.
-막히면 REST API 로 넣으세요(`POST /v10/projects/{id}/env?teamId=...&upsert=true`,
-body `{key,value,type:"encrypted",target:["preview"]}`). 토큰은
-`%APPDATA%\com.vercel.cli\Data\auth.json`.
+실측 비용: 1명 라운드에 `embed 2콜 / verdict 1콜`. 설계값과 일치.
 
 ### ② ~~Vercel SSO~~ — 해소됨 (2026-07-27)
 
@@ -195,6 +167,15 @@ public/standalone.html   원래 단일 HTML — 기기 없는 교실용 폴백
   `vite.config.ts` 한 곳으로 합쳤습니다.
 - **Node 의 `/tmp/x` 는 Windows 에서 `C:\tmp\x`**, Git Bash 의 `/tmp` 와 다른 곳입니다.
 - **Next 16 은 `middleware` 규약을 deprecated** 처리했습니다 → `proxy.ts`.
+- **`vercel env add` 가 값을 빈 문자열로 저장합니다.** 성공을 반환하는데도 그렇습니다.
+  실제로 `GEMINI_API_KEY`·`PARAPHRASE_LLM` 이 프로덕션에 0자로 들어가 배포본에서
+  Gemini 호출이 전부 실패했습니다. **REST API(`POST /v10/projects/{id}/env?upsert=true`)로
+  넣고, `vercel env pull` 로 길이를 확인하세요.**
+- **`.env.local` 의 따옴표가 그대로 넘어갑니다.** `KEY="AIza..."` 를 그대로 밀면
+  값에 `"` 가 포함돼 401/400 이 납니다. `loadEnv()` 는 벗기지만 REST 로 밀 때는 직접 벗겨야 합니다.
+- **로컬에서 안 잡히는 결함이 있습니다.** 학생 화면이 첫 렌더에서 localStorage·Date.now()
+  를 읽어 프로덕션에서만 React #418(하이드레이션 실패)이 났습니다.
+  배포 후에는 `scripts/prod-smoke.mjs` 를 한 번 돌리세요.
 - **원격 main 에 자동화가 직접 push 합니다** — `project-dashboard` 액션이 `STATUS.md` 를
   넣습니다. push 가 거부되면 남의 작업이 아니라 이것일 가능성이 큽니다.
   `git pull --rebase origin main` 후 다시 push 하세요.
@@ -213,6 +194,7 @@ npm run typecheck
 npm run calibrate # 채점 품질 회귀 (실제 API. 채점 로직·임베딩 모델 건드렸을 때만)
 npx vite-node scripts/audit-passages.mjs   # 지문 검수 자동 점검 요약
 npx vite-node scripts/live-check.mjs       # 실제 API 로 한 라운드 채점 + 호출 수
+SMOKE_ANSWER="..." node scripts/prod-smoke.mjs   # 배포본에서 실 라운드 1회 (지문에 맞는 답안 필수)
 ```
 
 CI(`.github/workflows/ci.yml`)는 typecheck + 단위 + build + E2E 를 돌립니다.
