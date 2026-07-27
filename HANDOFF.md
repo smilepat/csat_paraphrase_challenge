@@ -1,6 +1,8 @@
 # HANDOFF — 100-Word Paraphrase Challenge
 
-**최종 갱신** 2026-07-27 · **HEAD** `67de2c1` · **레포** `smilepat/csat_paraphrase_challenge` (private)
+**최종 갱신** 2026-07-27 · **레포** `smilepat/csat_paraphrase_challenge` (private)
+현재 커밋은 `git log --oneline -1` 로 확인하세요 — 이 문서에 해시를 박으면
+문서를 고치는 순간 어긋납니다.
 
 수능 기출 지문을 가장 짧고 쉬운 영어로 바꾸는 교실 활동 앱.
 단일 HTML 게임을 Next.js 16 앱으로 전환했고, 학생은 자기 기기로 제출하고 교사는
