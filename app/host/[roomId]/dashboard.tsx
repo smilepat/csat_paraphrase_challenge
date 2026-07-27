@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { remainingMs, type RoomState } from "@/lib/rooms"
+import { countsTowardScore, remainingMs, reviewState, type RoomState } from "@/lib/rooms"
 import {
   reviewSubmission, setRevealFeedback, setRoomPassage, setRoomState,
 } from "@/app/actions/host"
@@ -56,10 +56,12 @@ export default function HostDashboard({
   const submitted = rows.filter((r) => r.submissionId)
   const left = remainingMs(room.writingEndsAt, now)
 
+  // 교사가 확인하기 전의 플래그 제출은 순위에 넣지 않는다.
+  // 넣으면 검토 안 된 복붙이 1위에 오른다(실측 69.3점, 2위).
   const ranked = useMemo(
     () =>
       [...submitted]
-        .filter((r) => r.scores)
+        .filter((r) => r.scores && countsTowardScore(r.scores, r.teacherOk))
         .sort((a, b) => (b.scores!.total + b.scores!.bonus) - (a.scores!.total + a.scores!.bonus)),
     [submitted],
   )
@@ -397,6 +399,9 @@ function Roster({ rows, state }: { rows: HostRow[]; state: RoomState }) {
                     {r.teacherOk === 0 && (
                       <span className="ml-1.5 text-xs text-[var(--color-team-red)]">기각</span>
                     )}
+                    {r.scores && reviewState(r.scores, r.teacherOk) === "pending" && (
+                      <span className="ml-1.5 text-xs text-[var(--color-warn)]">확인 대기</span>
+                    )}
                   </td>
                   <td className="py-1.5 pr-3">
                     {!r.submissionId ? (
@@ -419,7 +424,11 @@ function Roster({ rows, state }: { rows: HostRow[]; state: RoomState }) {
                   <td className="py-1.5 pr-3 text-right tabular-nums">{r.scores?.brevity ?? "—"}</td>
                   <td className="py-1.5 pr-3 text-right tabular-nums">{r.scores?.ease ?? "—"}</td>
                   <td className="py-1.5 text-right font-bold tabular-nums">
-                    {r.scores ? (r.scores.total + r.scores.bonus).toFixed(1) : "—"}
+                    {!r.scores
+                      ? "—"
+                      : countsTowardScore(r.scores, r.teacherOk)
+                        ? (r.scores.total + r.scores.bonus).toFixed(1)
+                        : <span className="font-normal text-[var(--color-muted)]">보류</span>}
                   </td>
                 </tr>
               ))}

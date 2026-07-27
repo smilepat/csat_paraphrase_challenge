@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 import { db } from "@/lib/db"
 import { isHost } from "@/app/actions/host"
+import { countsTowardScore, reviewState } from "@/lib/rooms"
 import type { ScoreResult } from "@/lib/scoring"
 
 export const dynamic = "force-dynamic"
@@ -60,10 +61,10 @@ export default async function ReportPage({ params }: { params: Promise<{ roomId:
     teacherOk: r.teacher_ok !== null ? Number(r.teacher_ok) : null,
   }))
 
-  // 학생별 집계 — 기각된 제출은 제외한다.
+  // 학생별 집계 — 기각된 제출과 확인 대기 중인 플래그 제출을 뺀다.
   const byStudent = new Map<string, { n: number; total: number; meaning: number; words: number }>()
   for (const r of rows) {
-    if (!r.scores || r.teacherOk === 0) continue
+    if (!r.scores || !countsTowardScore(r.scores, r.teacherOk)) continue
     const cur = byStudent.get(r.nickname) ?? { n: 0, total: 0, meaning: 0, words: 0 }
     cur.n++
     cur.total += r.scores.total + r.scores.bonus
@@ -79,12 +80,15 @@ export default async function ReportPage({ params }: { params: Promise<{ roomId:
     .sort((a, b) => b.avgTotal - a.avgTotal)
 
   const csv = [
-    ["round", "nickname", "team", "words", "meaning", "brevity", "ease", "bonus", "total", "teacher_ok", "text"],
+    ["round", "nickname", "team", "words", "meaning", "brevity", "ease", "bonus", "total",
+     "teacher_ok", "review_state", "text"],
     ...rows.map((r) => [
       r.round, r.nickname, r.team ?? "", r.words,
       r.scores?.meaning ?? "", r.scores?.brevity ?? "", r.scores?.ease ?? "",
       r.scores?.bonus ?? "", r.scores ? r.scores.total + r.scores.bonus : "",
-      r.teacherOk === null ? "" : r.teacherOk, `"${r.text.replace(/"/g, '""')}"`,
+      r.teacherOk === null ? "" : r.teacherOk,
+      reviewState(r.scores, r.teacherOk),
+      `"${r.text.replace(/"/g, '""')}"`,
     ].join(",")),
   ].join("\n")
 
@@ -148,10 +152,15 @@ export default async function ReportPage({ params }: { params: Promise<{ roomId:
                 <strong>
                   {r.round}R · {r.nickname}
                   {r.teacherOk === 0 && <span className="ml-2 text-[var(--color-team-red)]">기각</span>}
+                  {r.scores && reviewState(r.scores, r.teacherOk) === "pending" && (
+                    <span className="ml-2 text-[var(--color-warn)]">확인 대기</span>
+                  )}
                 </strong>
                 <span className="text-[var(--color-muted)]">
                   {r.words}단어
-                  {r.scores && ` · 총 ${(r.scores.total + r.scores.bonus).toFixed(1)}점`}
+                  {r.scores && countsTowardScore(r.scores, r.teacherOk)
+                    ? ` · 총 ${(r.scores.total + r.scores.bonus).toFixed(1)}점`
+                    : ""}
                 </span>
               </div>
               <p className="mt-1 text-sm leading-relaxed">{r.text}</p>

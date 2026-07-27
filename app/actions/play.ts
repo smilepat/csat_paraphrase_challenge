@@ -126,6 +126,8 @@ export interface PlayerView {
     words: number
     scores: ScoreResult | null
     verdict: Verdict | null
+    /** 교사 판단 — 플래그가 붙은 제출은 이게 정해져야 점수를 보여준다 */
+    teacherOk: number | null
   } | null
   submittedCount: number
   playerCount: number
@@ -153,7 +155,7 @@ export async function playerView(code: string, playerId: string): Promise<Player
   }
 
   const sub = await db.execute({
-    sql: `SELECT text, word_count, scores, verdict FROM pc_submissions
+    sql: `SELECT text, word_count, scores, verdict, teacher_ok FROM pc_submissions
           WHERE room_id = ? AND round_no = ? AND player_id = ?`,
     args: [room.id, room.roundNo, playerId],
   })
@@ -174,6 +176,7 @@ export async function playerView(code: string, playerId: string): Promise<Player
           words: Number(sub.rows[0].word_count),
           scores: parseJson<ScoreResult | null>(sub.rows[0].scores, null),
           verdict: parseJson<Verdict | null>(sub.rows[0].verdict, null),
+          teacherOk: sub.rows[0].teacher_ok !== null ? Number(sub.rows[0].teacher_ok) : null,
         }
       : null,
     submittedCount: Number(counts.rows[0]?.subs ?? 0),

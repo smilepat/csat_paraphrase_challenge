@@ -97,14 +97,27 @@ test("교사가 지문을 승인하고 방을 열면 학생이 참여해 채점�
   // 베스트 답안 비교가 보인다
   await expect(teacherPage.getByText("베스트 답안 비교")).toBeVisible()
 
+  // 핵심: 확인 전의 복붙 제출은 순위·베스트에 오르면 안 된다
+  const best = teacherPage.locator("section", { hasText: "베스트 답안 비교" })
+  await expect(best.getByText("지영")).toBeHidden()
+  await expect(best.getByText("민수")).toBeVisible()
+  // 명단에도 점수 대신 보류로 뜬다
+  await expect(teacherPage.getByText("확인 대기").first()).toBeVisible()
+
   // ---- 9. 학생이 결과를 본다 ----
   await expect(s1.getByText("핵심 보존")).toBeVisible({ timeout: 10_000 })
   await expect(s1.getByText("총점")).toBeVisible()
+
+  // 복붙한 학생은 점수 대신 확인 안내를 본다
+  await expect(s2.getByText(/선생님이 확인 중입니다/)).toBeVisible({ timeout: 10_000 })
+  await expect(s2.getByText("총점")).toBeHidden()
 
   // ---- 10. 교사가 복붙 제출을 기각 ----
   await teacherPage.getByRole("button", { name: "기각" }).first().click()
   // 처리된 제출은 확인 목록에서 사라진다
   await expect(teacherPage.getByText(/확인이 필요한 제출/)).toBeHidden({ timeout: 10_000 })
+  // 기각했으므로 학생에게도 반영 안 됨이 표시된다
+  await expect(s2.getByText(/점수에 반영되지 않았습니다/)).toBeVisible({ timeout: 10_000 })
 
   // ---- 11. 다음 라운드 → 라운드 번호 증가 ----
   await teacherPage.getByRole("button", { name: "다음 라운드" }).click()

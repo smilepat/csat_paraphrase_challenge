@@ -68,6 +68,39 @@ export function isTimeUp(writingEndsAt: string | null, now: number = Date.now())
   return r !== null && r <= 0
 }
 
+// ============================================================
+// 제출의 반영 상태
+//
+// 자동 채점이 판단을 보류한 제출(원문 복붙·모범답안 베끼기·또래 복사·모순)은
+// 교사가 결정하기 전까지 **어디에도 반영하지 않는다**.
+//
+// 이전에는 플래그만 붙이고 점수는 그대로 살려 뒀는데, 그러면 실측에서 확인된 것처럼
+// 원문을 25단어 복붙한 답안이 69.3점으로 2위에 올랐다. 교사가 확인을 건너뛰면
+// 베낀 답안이 순위표 위에 남는다 — 이 활동이 가르치려는 것과 정반대다.
+// 그렇다고 자동으로 0점 처리하지도 않는다. 정당한 인용을 기계가 가려낼 수 없기 때문에
+// 판단은 교사에게 남기고, 판단 전까지만 보류한다.
+// ============================================================
+
+export type ReviewState = "counted" | "pending" | "rejected"
+
+export function reviewState(
+  scores: { needsReview: boolean } | null,
+  teacherOk: number | null,
+): ReviewState {
+  if (teacherOk === 0) return "rejected"
+  if (teacherOk === 1) return "counted"
+  if (!scores) return "pending"
+  return scores.needsReview ? "pending" : "counted"
+}
+
+/** 순위·팀 점수·평균에 반영되는가. */
+export function countsTowardScore(
+  scores: { needsReview: boolean } | null,
+  teacherOk: number | null,
+): boolean {
+  return reviewState(scores, teacherOk) === "counted"
+}
+
 export function nicknameError(nickname: string): string | null {
   const n = nickname.trim()
   if (n.length < 1) return "이름을 입력하세요."

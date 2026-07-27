@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { getSession } from "@/lib/identity"
-import { remainingMs } from "@/lib/rooms"
+import { remainingMs, reviewState } from "@/lib/rooms"
 import { wordCount } from "@/lib/scoring/text"
 import { playerView, submitAnswer, type PlayerView } from "@/app/actions/play"
 
@@ -213,6 +213,25 @@ export default function PlayClient({ code }: { code: string }) {
             <p className="mt-2 text-sm text-[var(--color-muted)]">이번 라운드는 제출하지 않았습니다.</p>
           ) : !mySubmission.scores ? (
             <p className="mt-2 text-sm text-[var(--color-muted)]">채점 중입니다...</p>
+          ) : mySubmission.teacherOk === 0 ? (
+            <>
+              <p className="mt-2 rounded-xl bg-slate-50 p-4 leading-relaxed">{mySubmission.text}</p>
+              <p className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800">
+                이 답안은 점수에 반영되지 않았습니다. 선생님께 확인하세요.
+              </p>
+            </>
+          ) : reviewState(mySubmission.scores, mySubmission.teacherOk) === "pending" ? (
+            <>
+              <p className="mt-2 rounded-xl bg-slate-50 p-4 leading-relaxed">{mySubmission.text}</p>
+              <p className="mt-3 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                선생님이 확인 중입니다. 점수는 확인 뒤에 나옵니다.
+              </p>
+              <ul className="mt-2 space-y-2">
+                {mySubmission.scores.flags.map((f, i) => (
+                  <li key={i} className="text-sm text-[var(--color-muted)]">{f.message}</li>
+                ))}
+              </ul>
+            </>
           ) : (
             <>
               <p className="mt-2 rounded-xl bg-slate-50 p-4 leading-relaxed">{mySubmission.text}</p>

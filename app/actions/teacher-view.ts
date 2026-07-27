@@ -6,7 +6,7 @@
 // ============================================================
 
 import { db } from "@/lib/db"
-import type { Room, RoomState } from "@/lib/rooms"
+import { countsTowardScore, type Room, type RoomState } from "@/lib/rooms"
 import type { ScoreResult } from "@/lib/scoring"
 import type { Verdict } from "@/lib/scoring/verdict"
 import { assertHost } from "./host"
@@ -122,7 +122,9 @@ export async function hostView(roomId: string): Promise<HostView | null> {
     elapsedMs: x.elapsed_ms !== null ? Number(x.elapsed_ms) : null,
   }))
 
-  // 팀 점수는 전 라운드 누적. 교사가 기각한 제출(teacher_ok=0)은 뺀다.
+  // 팀 점수는 전 라운드 누적.
+  // 기각(teacher_ok=0)뿐 아니라 **확인 대기 중인 플래그 제출도 뺀다** —
+  // 교사가 보기 전에 베낀 답안이 팀 점수를 올려 두면 되돌리기 번거롭다.
   const teamRes = await db.execute({
     sql: `SELECT p.team, s.scores, s.teacher_ok FROM pc_submissions s
           JOIN pc_players p ON p.id = s.player_id
@@ -131,9 +133,10 @@ export async function hostView(roomId: string): Promise<HostView | null> {
   })
   const teamScores = { blue: 0, red: 0 }
   for (const t of teamRes.rows) {
-    if (Number(t.teacher_ok) === 0) continue
     const sc = parseJson<ScoreResult | null>(t.scores, null)
     if (!sc) continue
+    const ok = t.teacher_ok === null ? null : Number(t.teacher_ok)
+    if (!countsTowardScore(sc, ok)) continue
     const key = t.team === "blue" ? "blue" : "red"
     teamScores[key] += sc.total + sc.bonus
   }
