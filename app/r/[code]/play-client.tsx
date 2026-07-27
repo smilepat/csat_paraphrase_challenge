@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { getSession } from "@/lib/identity"
+import { getSession, type PlayerSession } from "@/lib/identity"
 import { remainingMs, reviewState } from "@/lib/rooms"
 import { wordCount } from "@/lib/scoring/text"
 import { playerView, submitAnswer, type PlayerView } from "@/app/actions/play"
@@ -11,12 +11,15 @@ const POLL_MS = 3000
 
 export default function PlayClient({ code }: { code: string }) {
   const router = useRouter()
-  const [session] = useState(() => getSession(code))
+  // localStorage 와 Date.now() 를 첫 렌더에서 읽으면 서버 렌더 결과와 어긋나
+  // 하이드레이션이 깨진다(프로덕션에서 React #418 로 확인). 마운트 후에 읽는다.
+  const [session, setSession] = useState<PlayerSession | null>(null)
+  const [mounted, setMounted] = useState(false)
   const [view, setView] = useState<PlayerView | null>(null)
   const [text, setText] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const [now, setNow] = useState(() => Date.now())
+  const [now, setNow] = useState(0)
 
   // 부정행위 차단이 아니라 교사 화면에 표시할 신호로만 쓴다.
   const pasteCount = useRef(0)
@@ -24,8 +27,14 @@ export default function PlayClient({ code }: { code: string }) {
   const startedAt = useRef<number | null>(null)
 
   useEffect(() => {
-    if (!session) router.replace(`/join?code=${code}`)
-  }, [session, code, router])
+    setSession(getSession(code))
+    setNow(Date.now())
+    setMounted(true)
+  }, [code])
+
+  useEffect(() => {
+    if (mounted && !session) router.replace(`/join?code=${code}`)
+  }, [mounted, session, code, router])
 
   const refresh = useCallback(async () => {
     if (!session) return
@@ -65,14 +74,16 @@ export default function PlayClient({ code }: { code: string }) {
     }
   }, [roundKey, view?.mySubmission])
 
-  if (!session) return null
+  if (!mounted || !session) {
+    return <Shell><p className="text-[var(--color-muted)]">불러오는 중...</p></Shell>
+  }
   if (!view) {
     return <Shell><p className="text-[var(--color-muted)]">불러오는 중...</p></Shell>
   }
 
   const { room, passage, mySubmission } = view
   const words = wordCount(text)
-  const left = remainingMs(room.writingEndsAt, now)
+  const left = now ? remainingMs(room.writingEndsAt, now) : null
   const submitted = Boolean(mySubmission)
 
   async function onSubmit() {
