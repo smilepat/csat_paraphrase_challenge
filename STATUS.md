@@ -4,6 +4,7 @@ status: active
 progress: 92
 updated: 2026-07-27
 pc: DESKTOP-A8ES4P0
+wip: 1            # WIP 5 (2026-08-05 확정) — repo-ops-system/MULTI_PC_OPS.md §1-1
 ---
 
 # csat_paraphrase_challenge — STATUS
