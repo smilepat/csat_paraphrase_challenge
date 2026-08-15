@@ -1,8 +1,8 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { nextTask, studyReport, submitAnswer, type NextTask, type SubmitResult } from "@/app/actions/study"
-import type { TaskView } from "@/lib/tasks/render"
+import { TaskContext } from "@/components/task-context"
 
 type Report = Awaited<ReturnType<typeof studyReport>>
 
@@ -10,40 +10,6 @@ const AXIS_NAME: Record<number, string> = {
   1: "다른 낱말로",
   2: "이름 ↔ 문장",
   3: "되받는 이름",
-}
-
-/** 문맥에서 자극만 밑줄로 강조한다. 시험지의 밑줄과 같은 표시다. */
-function Context({ view, onSelect }: { view: TaskView; onSelect?: (s: { start: number; end: number }) => void }) {
-  const ref = useRef<HTMLParagraphElement>(null)
-  const { context, highlight } = view
-
-  const handleUp = useCallback(() => {
-    if (!onSelect || !ref.current) return
-    const sel = window.getSelection()
-    if (!sel || sel.isCollapsed || !ref.current.contains(sel.anchorNode)) return
-    // 문맥 전체 텍스트 기준 오프셋을 구한다
-    const range = sel.getRangeAt(0)
-    const pre = range.cloneRange()
-    pre.selectNodeContents(ref.current)
-    pre.setEnd(range.startContainer, range.startOffset)
-    const start = pre.toString().length
-    onSelect({ start, end: start + sel.toString().length })
-  }, [onSelect])
-
-  return (
-    <p
-      ref={ref}
-      onMouseUp={handleUp}
-      onTouchEnd={handleUp}
-      className="whitespace-pre-wrap font-serif text-[1.05rem] leading-[1.75] text-[var(--color-ink)]"
-    >
-      {context.slice(0, highlight.start)}
-      <mark className="bg-transparent font-semibold underline decoration-[var(--color-brand)] decoration-2 underline-offset-4">
-        {context.slice(highlight.start, highlight.end)}
-      </mark>
-      {context.slice(highlight.end)}
-    </p>
-  )
 }
 
 function AxisBars({ report }: { report: Report }) {
@@ -157,7 +123,12 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
           <p className="text-sm font-semibold">{view.prompt}</p>
 
           <div className="rounded-xl bg-[var(--color-soft)] p-4">
-            <Context view={view} onSelect={isSpanTask ? setSpan : undefined} />
+            <TaskContext
+              context={view.context}
+              stimulus={view.highlight}
+              selection={span}
+              onSelect={isSpanTask ? setSpan : undefined}
+            />
           </div>
 
           {view.type === 1 && view.avoidWords.length > 0 && (
