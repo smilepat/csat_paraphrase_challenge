@@ -282,9 +282,16 @@ npm run tasks:verify -- --local   # 오프셋 무결성. 실패 시 exit 1 (CI �
 - **요약문 구분자는 U+F003B** — BMP 사제 영역(U+E000~U+F8FF)이 **아니라** Plane 15
   보충 사제 영역이다. JS 에서 서로게이트 쌍이라 문자 클래스에 `u` 플래그가 필요하고,
   범위를 좁게 잡으면 **조용히 0건**이 된다(에러가 안 난다).
-- **`.mjs` 를 CRLF 로 저장하면 vite-node 가 shebang 에서 죽는다.**
-  `SyntaxError: Invalid or unexpected token` 이 1행을 가리킨다. 스크립트로 파일을
-  고칠 때 `newline=''` 로 LF 를 유지할 것.
+- **셔뱅 + CRLF + TS import 세 개가 겹치면 vite-node 가 죽는다.**
+  `SyntaxError: Invalid or unexpected token`. 셋 다 있어야 재현된다 — 셔뱅이 없거나
+  TS 를 import 하지 않으면 CRLF 여도 멀쩡하고, **`node --check` 는 CRLF 파일을
+  통과시킨다**(vite 의 변환 단계 문제라 순수 파싱으로는 안 잡힌다). 그래서 원인을
+  찾기가 유난히 어렵다. 처음엔 "CRLF 가 셔뱅을 깬다"고 적었는데 최소 재현으로
+  확인해 보니 틀렸다 — TS import 가 있어야 vite 가 그 파일을 변환하고, 그때 셔뱅
+  제거가 `` 을 남긴다.
+  → `.gitattributes` 로 LF 를 고정했다. Windows 새 클론에서
+  `scripts/mine-tasks.mjs` 와 기존 `scripts/diagnose-meaning.mjs` 가 이 조건이었다.
+  스크립트로 파일을 고칠 때도 `newline=''` 로 LF 를 유지할 것.
 - **`This may result` 는 되받기가 아니다.** result 가 동사다. 껍데기 이름 바로 앞이
   조동사면 버린다(`VERB_CUE`). 이 한 줄이 없으면 오탐이 그대로 들어온다.
 - **`of` 보문이 술부를 삼킨다.** "the variability of natural food ingredients **may**
@@ -304,6 +311,7 @@ npm run tasks:verify -- --local   # 오프셋 무결성. 실패 시 exit 1 (CI �
 | `scripts/mine-tasks.mjs` | 채굴 → 적재. 검수본(`review_status != 'raw'`)은 덮지 않는다 |
 | `scripts/verify-tasks.mjs` | 오프셋·범위·유형별 필수 필드 검사 |
 | `lib/tasks/__tests__/mine.test.ts` | 13개. 실제 지문 조각 + 가드 전용 픽스처 |
+| `.gitattributes` | 줄끝 LF 고정. 위 함정의 재발 방지 |
 
 ### 다음 (M9)
 

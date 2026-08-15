@@ -1,0 +1,25 @@
+# 줄끝을 LF 로 고정한다.
+#
+# 왜 필요한가: 이 저장소를 Windows(core.autocrlf=true)에서 새로 클론하면 .mjs 가
+# CRLF 로 체크아웃되고, 그러면 **셔뱅이 있고 TS 를 import 하는 스크립트**가
+# vite-node 에서 `SyntaxError: Invalid or unexpected token` 으로 죽는다.
+# (scripts/mine-tasks.mjs, scripts/diagnose-meaning.mjs 가 그 조건에 해당한다.)
+#
+# 셋 다 겹쳐야 재현된다 — 셔뱅이 없거나 TS import 가 없으면 CRLF 여도 멀쩡하고,
+# `node --check` 는 CRLF 파일도 통과시킨다. 그래서 원인을 찾기가 유난히 어렵다.
+#
+# ⚠ .gitattributes 는 **나중 줄이 이긴다.** 일반 규칙을 먼저, 예외를 뒤에 둘 것.
+
+* text=auto eol=lf
+
+*.mjs  text eol=lf
+*.ts   text eol=lf
+*.tsx  text eol=lf
+*.sql  text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+
+*.db      binary
+*.png     binary
+*.jpg     binary
+*.woff2   binary
