@@ -63,3 +63,54 @@ describe("avoidanceScore", () => {
     expect(avoidanceScore(0.8)).toBe(1)
   })
 })
+
+// ── 2단 결합 ────────────────────────────────────────────────
+import { finalizeType1 } from "../type1"
+import type { Type1Verdict } from "../verdict1"
+
+const v = (over: Partial<Type1Verdict>): Type1Verdict =>
+  ({ id: "x", meaning: "same", reworded: true, koreanFeedback: "", suggested: "", ...over })
+
+const freeOf = (answer: string) =>
+  checkAvoidance({ ...base, answer, avoidWords: AVOID })
+
+describe("finalizeType1 — 의미 × 회피", () => {
+  const good = "raw materials from the earth differ a great deal in what they hold"
+
+  it("둘 다 좋으면 만점", () => {
+    expect(finalizeType1(freeOf(good), v({})).score).toBe(100)
+  })
+
+  it("낱말만 바꾸고 뜻이 달라지면 거의 0 이다 — 합이 아니라 곱이기 때문", () => {
+    // 합(50×의미 + 50×회피)이면 회피 만점만으로 60점을 가져간다.
+    // 그게 학생이 가장 많이 하는 실패이므로 반드시 곱이어야 한다.
+    const r = finalizeType1(freeOf(good), v({ meaning: "changed" }))
+    expect(r.score).toBeLessThan(40)
+    expect(r.errorName).toBe("비슷하지만 다른 말")
+  })
+
+  it("뒤집힌 답은 회피가 완벽해도 0 이다", () => {
+    expect(finalizeType1(freeOf(good), v({ meaning: "reversed" })).score).toBe(0)
+  })
+
+  it("무료 단계에서 떨어지면 유료 판정을 쓰지 않는다", () => {
+    const r = finalizeType1(freeOf(base.stimulus), null)
+    expect(r.score).toBe(0)
+    expect(r.judged).toBe(false)
+    expect(r.errorName).toBe("지문 단어를 그대로 씀")
+  })
+
+  it("어간은 피했지만 판정이 '옮긴 것'으로 보면 0 이다", () => {
+    // 무료 검사는 어간만 본다. 동의어를 그대로 옮긴 수준은 판정이 잡는다.
+    const r = finalizeType1(freeOf(good), v({ reworded: false }))
+    expect(r.score).toBe(0)
+    expect(r.errorName).toBe("지문 단어를 그대로 씀")
+  })
+
+  it("판정을 못 받으면 통과도 실패도 시키지 않는다", () => {
+    const r = finalizeType1(freeOf(good), null)
+    expect(r.score).toBeGreaterThan(0)
+    expect(r.score).toBeLessThan(100)
+    expect(r.judged).toBe(false)
+  })
+})

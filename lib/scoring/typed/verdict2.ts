@@ -71,9 +71,16 @@ each other.
    still "same". Failing to change the form is recorded in "form", never in "meaning".
    Do not use "changed" for a form failure.
 
+   CRITICAL — widening a quantifier or hedge is "broader", not "changed":
+   some -> all, one -> every, often -> always, may -> will, a few -> most.
+   The topic is unchanged; only the scope grew. Use "changed" only when the STUDENT
+   talks about a different thing altogether.
+
    CRITICAL — negation is "reversed", not "changed". If the ORIGINAL says X is possible
    and the STUDENT says X is not possible, that is "reversed". If the ORIGINAL names a
    property and the STUDENT names its opposite, that is "reversed".
+   Denying a property the ORIGINAL names is also "reversed":
+   "the controllability of X" -> "X cannot be controlled" is "reversed", not "changed".
 
 2) "form" — what the STUDENT actually wrote, regardless of what was asked:
    "noun_phrase" — a naming expression with no finite verb

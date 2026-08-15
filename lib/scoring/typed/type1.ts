@@ -95,3 +95,74 @@ export function avoidanceScore(avoidance: number): number {
   if (avoidance >= hi) return 1
   return (avoidance - lo) / (hi - lo)
 }
+
+// ── 2단: 의미 판정을 곱해 최종 점수를 낸다 ────────────────────
+
+import { MEANING_LABEL, MEANING_SCORE } from "./type2"
+import type { Type1Verdict } from "./verdict1"
+
+export type Type1Final = {
+  score: number
+  errorName: string | null
+  message: string
+  suggested: string
+  judged: boolean
+  /** 감사용 — 두 축이 각각 얼마였는지 남긴다 */
+  parts: { meaning: number; avoidance: number }
+}
+
+/**
+ * 의미 × 회피. **곱이지 합이 아니다.**
+ * 합으로 하면 뜻이 틀렸는데 단어만 바꾼 답이 절반을 가져가고, 그게 학생이
+ * 가장 많이 하는 실패다(오답 5종의 "비슷하지만 다른 말").
+ */
+export function finalizeType1(
+  free: Type1Free,
+  verdict: Type1Verdict | null,
+): Type1Final {
+  const avoidance = avoidanceScore(free.avoidance)
+
+  if (free.fail) {
+    return {
+      score: 0,
+      errorName: "지문 단어를 그대로 씀",
+      message: free.message,
+      suggested: "",
+      judged: false,
+      parts: { meaning: 0, avoidance },
+    }
+  }
+
+  if (!verdict) {
+    return {
+      score: Math.round(50 * avoidance),
+      errorName: null,
+      message: "낱말은 바꿨습니다. 의미 확인은 잠시 뒤에 다시 시도합니다.",
+      suggested: "",
+      judged: false,
+      parts: { meaning: 0.5, avoidance },
+    }
+  }
+
+  // 무료 검사는 어간만 본다. 동의어를 옮긴 수준인지는 판정이 한 번 더 본다.
+  if (!verdict.reworded) {
+    return {
+      score: 0,
+      errorName: "지문 단어를 그대로 씀",
+      message: verdict.koreanFeedback || "원문의 낱말을 거의 그대로 썼습니다.",
+      suggested: verdict.suggested,
+      judged: true,
+      parts: { meaning: MEANING_SCORE[verdict.meaning] / 100, avoidance },
+    }
+  }
+
+  const meaning = MEANING_SCORE[verdict.meaning] / 100
+  return {
+    score: Math.round(100 * meaning * avoidance),
+    errorName: verdict.meaning === "same" ? null : MEANING_LABEL[verdict.meaning],
+    message: verdict.koreanFeedback || MEANING_LABEL[verdict.meaning],
+    suggested: verdict.suggested,
+    judged: true,
+    parts: { meaning, avoidance },
+  }
+}
