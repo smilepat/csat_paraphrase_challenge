@@ -1,0 +1,272 @@
+// ============================================================
+// 지문에서 유형별 태스크 후보를 뽑는다. **LLM 을 쓰지 않는다** — 전부 정규식과
+// 빈도표로만 만든다. 여기서 나온 것은 전부 후보(review_status='raw')이며
+// 사람이 승인해야 학생에게 나간다.
+//
+// 유형별 공급량은 313편 전수 실측 기준(사례집 분석):
+//   유형1  문장 2,498개 — 사실상 전부가 후보라 지문당 상한을 둔다
+//   유형2  the+파생명사+of  228건 / 137편(43%)
+//   유형3  지시사+추상명사   24건 /  23편(7%)  ← 정규식의 상한. 확장은 M13.
+// ============================================================
+
+import { sentences, splitSummaryBlock, usableSentence, hasHangul } from "./segment"
+
+export type TaskDraft = {
+  passageId: string
+  type: 1 | 2 | 3
+  direction: string | null
+  contextStart: number
+  contextEnd: number
+  stimulusStart: number
+  stimulusEnd: number
+  stimulusText: string
+  targetForm: "noun_phrase" | "clause" | null
+  answerStart: number | null
+  answerEnd: number | null
+  avoidWords: string[] | null
+  gold: { text: string; note?: string }[] | null
+  origin: "gold" | "regex" | "llm"
+  notes: string | null
+}
+
+export type FreqRank = Record<string, number>
+
+/** 지문당 상한. 한 지문이 문제 은행을 독차지하지 않게 한다. */
+export const CAPS = { type1: 2, type2unfold: 2, type2fold: 1, type3: 3 } as const
+
+/** 이 순위 안쪽은 기능어에 가까워 "바꿔 쓸 대상"이 못 된다. */
+const COMMON_RANK = 300
+
+/** 유형 3 의 껍데기 이름. 앞 내용을 통째로 되받는 추상명사들. */
+const SHELL = `tendency shift process idea view approach practice phenomenon phenomena assumption belief
+pattern strategy principle distinction difference change effect result finding behavior notion concept
+ability capacity condition situation feature factor argument claim reasoning explanation account
+interpretation perspective problem mechanism relationship development transformation capability quality
+property trend attitude response system structure function activity variation insight observation
+constraint limitation requirement consequence advantage benefit risk case reason purpose goal method
+technique procedure step stage paradox dilemma tension conflict contradiction bias error illusion
+complexity uncertainty ambiguity diversity variability flexibility kind sort type form aspect element
+characteristic`
+  .split(/\s+/)
+  .filter(Boolean)
+
+const SHELL_ALT = [...new Set(SHELL.flatMap((w) => [w, w + "s"]))]
+  .sort((a, b) => b.length - a.length)
+  .join("|")
+
+/** 명사화 접미사. -al/-y 는 너무 헐거워 뺐다(the total of, the way of 를 잡는다). */
+const NOMINAL_SUFFIX = "tion|sion|ity|ment|ness|ance|ence|ism|ure|ship|hood|dom|ing"
+
+const RE_NOMINAL = new RegExp(
+  String.raw`\bthe\s+((?:[a-z]+\s+){0,2}?[a-z]+(?:${NOMINAL_SUFFIX}))\s+of\b`,
+  "gi",
+)
+// 중간 수식어를 캡처해 둔다 — 껍데기 이름 바로 앞이 조동사면 그 낱말은 명사가
+// 아니라 **동사**다("This may result"). 이 한 줄이 없으면 오탐이 그대로 들어온다.
+const RE_SHELL_DEM = new RegExp(
+  String.raw`\b(This|These|Such|Those)\s+((?:[A-Za-z-]+\s+){0,3}?)(?:${SHELL_ALT})\b`,
+  "g",
+)
+const RE_SHELL_DEF = new RegExp(
+  String.raw`\bThe\s+((?:[A-Za-z-]+\s+){0,3}?)(?:${SHELL_ALT})\b`,
+  "g",
+)
+
+/** 껍데기 이름 앞에 오면 그것이 동사임을 뜻하는 낱말들. */
+const VERB_CUE = /^(may|might|will|would|can|could|shall|should|must|to|not|never|also|often|then)$/i
+
+function looksLikeVerb(middle: string): boolean {
+  const last = middle.trim().split(/\s+/).pop() ?? ""
+  return VERB_CUE.test(last)
+}
+
+/**
+ * of 보문이 여기서 끝난다고 볼 낱말들. 접속사뿐 아니라 **조동사·계사**도 넣어야
+ * "the variability of natural food ingredients **may** (B) people's ..." 처럼
+ * 명사구를 넘어 술부까지 삼키는 일이 없다.
+ */
+const STOP_OF =
+  /^(and|or|but|which|that|who|whose|because|while|although|may|might|will|would|can|could|shall|should|must|is|are|was|were|be|been|has|have|had|do|does|did|seems?|becomes?)$/
+
+/** of 보문의 끝을 근사한다. 구문 분석이 아니라 근사이므로 후보는 전부 사람이 본다. */
+function ofComplementEnd(body: string, from: number, limit: number): number {
+  let i = from
+  let words = 0
+  while (i < limit && words < 8) {
+    while (i < limit && /\s/.test(body[i])) i++
+    const start = i
+    while (i < limit && !/[\s,;:.!?]/.test(body[i])) i++
+    const w = body.slice(start, i).toLowerCase()
+    if (!w) break
+    words++
+    if (STOP_OF.test(w)) return start
+    if (i < limit && /[,;:.!?]/.test(body[i])) return i
+    if (w.startsWith("(")) return start
+  }
+  return Math.min(i, limit)
+}
+
+function contentWords(text: string, freq: FreqRank): string[] {
+  const seen = new Set<string>()
+  for (const raw of text.toLowerCase().match(/[a-z][a-z'-]{3,}/g) ?? []) {
+    const w = raw.replace(/^['-]+|['-]+$/g, "")
+    if (w.length < 4) continue
+    const rank = freq[w]
+    if (rank !== undefined && rank <= COMMON_RANK) continue
+    seen.add(w)
+  }
+  return [...seen]
+}
+
+/**
+ * 한 지문의 태스크 후보 전부.
+ * 요약문 블록(40번)은 읽기 지문이 아니므로 유형 1·3 에서 제외하고,
+ * 유형 2 에서는 오히려 **사람이 만든 정답 쪽**이므로 origin='gold' 로 표시한다.
+ */
+export function minePassage(
+  passageId: string,
+  body: string,
+  freq: FreqRank,
+): TaskDraft[] {
+  const { passageEnd, summaryStart, summary: summaryText } = splitSummaryBlock(body)
+  const sents = sentences(body)
+  const readable = sents.filter((s) => s.end <= passageEnd && usableSentence(s.text))
+  const out: TaskDraft[] = []
+
+  const sentenceAt = (pos: number) => sents.find((s) => pos >= s.start && pos < s.end)
+  const inSummary = (pos: number) => pos >= passageEnd
+
+  // ── 유형 1 : 문장을 다른 단어로 ────────────────────────────────
+  const ranked = readable
+    .map((s) => ({ s, words: contentWords(s.text, freq) }))
+    .filter((x) => x.words.length >= 4)
+    .sort((a, b) => b.words.length - a.words.length)
+
+  for (const { s, words } of ranked.slice(0, CAPS.type1)) {
+    out.push({
+      passageId, type: 1, direction: null,
+      contextStart: s.start, contextEnd: s.end,
+      stimulusStart: s.start, stimulusEnd: s.end, stimulusText: s.text,
+      targetForm: null, answerStart: null, answerEnd: null,
+      avoidWords: words.slice(0, 12),
+      gold: null, origin: "regex",
+      notes: null,
+    })
+  }
+
+  // ── 유형 2 unfold : 이름을 문장으로 ─────────────────────────────
+  // 40번 요약문 블록의 명사화는 **사람이 만든 정답 쪽**이라 가장 값지다.
+  // 문서 순서대로 상한을 먹이면 본문 앞쪽이 자리를 다 차지해 골드가 밀려난다.
+  // → 골드를 먼저 세우고, 상한은 일반 후보에만 적용한다.
+  const nominalHits = [...body.matchAll(RE_NOMINAL)].sort(
+    (a, b) => Number(inSummary(b.index!)) - Number(inSummary(a.index!)),
+  )
+  let unfold = 0
+  for (const m of nominalHits) {
+    const start = m.index!
+    const gold = inSummary(start)
+    if (!gold && unfold >= CAPS.type2unfold) continue
+    const host = sentenceAt(start)
+    if (!host || hasHangul(host.text)) continue
+    const end = ofComplementEnd(body, start + m[0].length, host.end)
+    const text = body.slice(start, end).trim()
+    if (text.length < 12 || hasHangul(text)) continue
+
+    // 요약문 안의 명사화라면 문맥이 구분자 글리프까지 거슬러 올라가지 않게 자른다
+    let ctxStart = gold ? Math.max(host.start, summaryStart) : host.start
+    while (ctxStart < body.length && !/[A-Za-z]/.test(body[ctxStart])) ctxStart++
+
+    out.push({
+      passageId, type: 2, direction: "unfold",
+      contextStart: Math.min(ctxStart, start), contextEnd: host.end,
+      stimulusStart: start, stimulusEnd: start + text.length, stimulusText: text,
+      targetForm: "clause", answerStart: null, answerEnd: null,
+      avoidWords: null, gold: null,
+      origin: gold ? "gold" : "regex",
+      notes: gold
+        ? "40번 요약문의 명사화 — 지문 본문에 대응하는 절이 있다. 검수 시 gold 에 적을 것"
+        : null,
+    })
+    if (!gold) unfold++
+  }
+
+  // ── 유형 2 fold : 문장을 이름으로 ──────────────────────────────
+  const foldable = readable.find(
+    (s) => s.text.length >= 80 && s.text.length <= 200 && !s.text.endsWith("?"),
+  )
+  if (foldable) {
+    out.push({
+      passageId, type: 2, direction: "fold",
+      contextStart: foldable.start, contextEnd: foldable.end,
+      stimulusStart: foldable.start, stimulusEnd: foldable.end, stimulusText: foldable.text,
+      targetForm: "noun_phrase", answerStart: null, answerEnd: null,
+      avoidWords: null, gold: null, origin: "regex", notes: null,
+    })
+  }
+
+  // ── 유형 2 골드 : 40번 요약문 ──────────────────────────────────
+  // ⚠ 요약문의 명사화 자리는 **빈칸 (A)** 그 자체다("The (A) of the production process").
+  //   즉 사람이 만든 정답 쌍은 원리적으로 정규식에 안 잡힌다. 자동 추출을 포기하고
+  //   검수 대기 스텁으로 세워 둔다 — 12개년 중 가장 값진 12쌍을 놓치지 않으려면
+  //   보이게 만들어야 한다.
+  if (summaryText) {
+    // 구분자 글리프는 문장 분할에서 요약문 첫 문장의 **앞머리에 붙는다.**
+    // 그래서 "요약문 뒤에서 시작하는 문장"을 찾으면 하나도 안 나온다 —
+    // 걸치는 문장을 찾아 시작점을 요약문 쪽으로 밀어야 한다.
+    const host = sents.find((s) => s.end > summaryStart && !hasHangul(s.text))
+    let start = host ? Math.max(host.start, summaryStart) : -1
+    while (start >= 0 && start < body.length && !/[A-Za-z]/.test(body[start])) start++
+    const block = host && start < host.end ? { start, end: host.end } : null
+    if (block) {
+      out.push({
+        passageId, type: 2, direction: "fold",
+        contextStart: block.start, contextEnd: block.end,
+        stimulusStart: block.start, stimulusEnd: block.end,
+        stimulusText: body.slice(block.start, block.end),
+        targetForm: "noun_phrase", answerStart: null, answerEnd: null,
+        avoidWords: null,
+        gold: [{ text: summaryText, note: "40번 요약문 원문" }],
+        origin: "gold",
+        notes:
+          "검수 필요: 지문에서 이 요약문에 대응하는 절을 찾아 stimulus 를 그쪽으로 옮기고, " +
+          "gold 에 (절 → 이름) 쌍을 적을 것. 빈칸 (A)/(B) 가 곧 정답이라 자동 추출이 안 된다.",
+      })
+    }
+  }
+
+  // ── 유형 3 : 되받는 이름 ───────────────────────────────────────
+  let t3 = 0
+  const seen3 = new Set<number>()
+  for (const [re, confident] of [[RE_SHELL_DEM, true], [RE_SHELL_DEF, false]] as const) {
+    for (const m of body.matchAll(re)) {
+      if (t3 >= CAPS.type3) break
+      const start = m.index!
+      if (seen3.has(start) || inSummary(start)) continue
+      // 마지막 캡처가 중간 수식어다. 조동사로 끝나면 뒤 낱말은 동사다.
+      if (looksLikeVerb(m[m.length - 1] ?? "")) continue
+      const host = sentenceAt(start)
+      if (!host || hasHangul(host.text)) continue
+
+      // 앞에 받을 것이 없으면 되받기가 아니다
+      const hostIdx = sents.indexOf(host)
+      if (hostIdx < 1) continue
+      const prev = sents[hostIdx - 1]
+      if (prev.end > passageEnd) continue
+
+      seen3.add(start)
+      out.push({
+        passageId, type: 3, direction: "span",
+        contextStart: sents[Math.max(0, hostIdx - 2)].start, contextEnd: host.end,
+        stimulusStart: start, stimulusEnd: start + m[0].length, stimulusText: m[0],
+        targetForm: null,
+        // 기본 후보는 **직전 한 문장**이다. 나열이 두 문장에 걸치면 검수에서 넓힌다.
+        answerStart: prev.start, answerEnd: prev.end,
+        avoidWords: null, gold: null, origin: "regex",
+        notes: confident ? null : "정관사 캡슐 — 되받기가 아닐 수 있다. 우선 검수 대상",
+      })
+      t3++
+    }
+  }
+
+  return out
+}
