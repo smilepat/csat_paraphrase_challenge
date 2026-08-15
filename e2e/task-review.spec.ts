@@ -18,7 +18,12 @@ test("검수 화면이 상태별로 갈라 보여준다", async ({ page }) => {
 
 test("검수자와 학생이 같은 문맥을 본다", async ({ page }) => {
   await page.goto("/admin/tasks?status=approved")
-  const adminContexts = await page.locator("article p.font-serif").allInnerTexts()
+  // 골드 스텁은 문단을 둘 그린다(문맥 + 지문 전문). 학생이 보는 것은 **첫 번째**뿐이다.
+  const cards = page.locator("article")
+  const adminContexts: string[] = []
+  for (let i = 0; i < (await cards.count()); i++) {
+    adminContexts.push(await cards.nth(i).locator("p.font-serif").first().innerText())
+  }
   expect(adminContexts.length).toBe(3)
 
   // 학생 화면에서도 같은 렌더러를 쓴다 — 검수자가 다른 것을 보면 검수가 무의미하다.
@@ -82,16 +87,21 @@ test("되받는 표현보다 뒤를 잡으면 저장을 거절한다", async ({ 
 })
 
 test("아이디를 걸어 두면 아이디도 검사한다", async ({ browser }) => {
-  // playwright.config 의 httpCredentials 는 teacher/e2e-teacher-pw 다.
-  // TEACHER_USERNAME 을 설정하지 않았으므로 아이디는 무엇이든 통과해야 한다
-  // — 이미 쓰고 있는 사람의 로그인을 갑자기 막지 않는다는 규약이다.
-  const ctx = await browser.newContext({
+  // playwright.config 가 TEACHER_USERNAME=teacher 를 건다. 비밀번호가 맞아도
+  // 아이디가 다르면 막혀야 한다 — 그것이 아이디를 거는 이유다.
+  const wrong = await browser.newContext({
     httpCredentials: { username: "누구든", password: "e2e-teacher-pw" },
   })
-  const page = await ctx.newPage()
-  const res = await page.goto("/admin/tasks")
-  expect(res?.status()).toBe(200)
-  await ctx.close()
+  const p1 = await wrong.newPage()
+  expect((await p1.goto("/admin/tasks"))?.status()).toBe(401)
+  await wrong.close()
+
+  const right = await browser.newContext({
+    httpCredentials: { username: "teacher", password: "e2e-teacher-pw" },
+  })
+  const p2 = await right.newPage()
+  expect((await p2.goto("/admin/tasks"))?.status()).toBe(200)
+  await right.close()
 })
 
 test("비밀번호가 틀리면 막는다", async ({ browser }) => {
@@ -102,4 +112,18 @@ test("비밀번호가 틀리면 막는다", async ({ browser }) => {
   const res = await page.goto("/admin/tasks")
   expect(res?.status()).toBe(401)
   await ctx.close()
+})
+
+test("골드 스텁은 지문 전문을 함께 보여준다 — 없으면 검수가 불가능하다", async ({ page }) => {
+  // 요약문 스텁은 "지문에서 대응하는 절을 찾으라"고 요구한다. 문맥(요약문 블록)만
+  // 보여주면 지문이 화면에 없어 찾는 것이 **원리적으로 불가능**하다.
+  // e2e 셋업은 골드를 심지 않으므로, 골드가 있을 때만 확인한다.
+  await page.goto("/admin/tasks?status=raw")
+  const gold = page.locator("article", { hasText: "요약문 골드" }).first()
+  if ((await gold.count()) === 0) test.skip(true, "이 DB 에 골드 스텁이 없다")
+  await expect(gold.getByText("절 하나를 끌어서")).toBeVisible()
+  // 지문 전문은 요약문 블록보다 훨씬 길다
+  const blocks = await gold.locator("p.font-serif").allInnerTexts()
+  expect(blocks.length).toBe(2)
+  expect(blocks[1].length).toBeGreaterThan(blocks[0].length)
 })

@@ -854,3 +854,39 @@ npx vercel env pull /tmp/check.txt --environment=production   # 확인 후 삭�
 ```
 
 ⚠ 환경변수는 **재배포해야 적용된다.**
+
+---
+
+## 21. 골드 스텁 검수 — 지문을 함께 보여준다
+
+2026-08-15. **검수가 원리적으로 불가능하던 것을 고쳤다.**
+
+40번 요약문 스텁의 안내문은 "지문에서 이 요약문에 대응하는 절을 찾아 stimulus 를 옮겨라"
+인데, 검수 카드는 `context`(= 요약문 블록)만 보여줬다. **지문이 화면에 없으니 찾을 수가
+없다.** 사용자가 "너무 어렵다"고 한 것이 정확했다 — 어려운 게 아니라 불가능했다.
+
+- `origin='gold'` 인 태스크에만 **지문 전문**을 함께 보낸다(검수자 전용).
+- 지문에서 절을 끌어 고르고 **`이 절을 자극으로 지정`** 을 누르면
+  `updateStimulus` 가 자극과 문맥을 그 문장으로 옮긴다.
+- 학생에게는 여전히 문맥(문장 하나)만 나간다 — 지문 전문은 `/admin` 안에서만 산다.
+
+### 첫 사례 (2015·40)
+
+| | |
+|---|---|
+| 지문의 절 | People **vary a great deal** both in **the intensity** of their response to art **and in the form** which that response takes. |
+| 요약문의 이름 | **the degrees and forms** of people's actual responses |
+
+`the intensity … and the form` 두 개가 `the degrees and forms` 하나로 접힌다.
+
+### ⚠ `.env.local` 이 e2e 로 샌다
+
+`next start` 는 `.env.local` 을 자동으로 읽는다. `TEACHER_USERNAME` 을 설정한 순간
+**e2e 6개가 401 로 깨졌다** — playwright 의 `httpCredentials` 는 `teacher` 인데
+실제 아이디가 새어 들어왔기 때문이다. `STUDY_INVITE_CODE` 도 같은 경로로 샌다.
+→ 인증·입장 관련 값은 `playwright.config.ts` 의 `webServer.env` 에서 **전부 덮는다.**
+
+### ⚠ skip 되는 테스트는 없는 테스트다
+
+새로 쓴 골드 검수 테스트가 `test.skip(골드가 없으면)` 이라 **조용히 건너뛰고 있었다.**
+e2e 셋업이 골드를 안 심었기 때문이다. 골드 스텁을 셋업에 추가해 실제로 돌게 했다.

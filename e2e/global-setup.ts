@@ -109,9 +109,24 @@ async function seedStudyTasks(dst: ReturnType<typeof createClient>) {
               (id, passage_id, type, direction, context_start, context_end,
                stimulus_start, stimulus_end, stimulus_text, target_form,
                answer_start, answer_end, avoid_words, origin, review_status)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?, 'gold', 'approved')`,
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?, 'regex', 'approved')`,
       args: [t[0], passageId, t[1], t[2], t[3], t[4], t[5], t[6], t[7], t[8], t[9], t[10], t[11]],
     })
   }
-  console.log(`[e2e-setup] 자습 태스크 ${tasks.length}건 승인 상태로 심었습니다`)
+
+  // 골드 스텁도 하나 심는다 — 지문 전문을 함께 보여주는 화면을 검사해야 한다.
+  // 이게 없으면 그 테스트가 조용히 skip 되고, 기능이 깨져도 아무도 모른다.
+  await dst.execute({
+    sql: `INSERT OR REPLACE INTO pc_tasks
+            (id, passage_id, type, direction, context_start, context_end,
+             stimulus_start, stimulus_end, stimulus_text, target_form,
+             gold, notes, origin, review_status)
+          VALUES (?,?,2,'fold',?,?,?,?,?,'noun_phrase',?,?, 'gold', 'raw')`,
+    args: [
+      `${passageId}#e2e-gold`, passageId, sStart, sEnd, sStart, sEnd, sentence,
+      JSON.stringify([{ text: sentence, note: "40번 요약문 원문" }]),
+      "검수 필요: 지문에서 이 요약문에 대응하는 절을 찾아 stimulus 를 옮길 것",
+    ],
+  })
+  console.log(`[e2e-setup] 자습 태스크 ${tasks.length}건 승인 + 골드 스텁 1건`)
 }

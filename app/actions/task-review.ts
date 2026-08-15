@@ -10,6 +10,7 @@
 
 import { db } from "@/lib/db"
 import { toTaskView, goldSpanInContext, type TaskRow, type TaskView } from "@/lib/tasks/render"
+import { sentences, hasHangul } from "@/lib/tasks/segment"
 
 export type ReviewTask = {
   view: TaskView
@@ -23,6 +24,12 @@ export type ReviewTask = {
   gold: { text: string; note?: string }[] | null
   /** 먼저 볼 것일수록 작다 */
   priority: number
+  /**
+   * 지문 전문. **골드 스텁에만** 넣는다.
+   * 40번 요약문 스텁은 "지문에서 대응하는 절을 찾으라"고 요구하는데, 문맥(요약문 블록)만
+   * 보여주면 지문이 화면에 없어 **찾는 것이 불가능하다.** 검수자에게만 나가는 값이다.
+   */
+  passageBody: string | null
 }
 
 /**
@@ -88,8 +95,48 @@ export async function listTasks(
       goldSpan: goldSpanInContext(row),
       gold: row.gold ? (JSON.parse(String(row.gold)) as { text: string; note?: string }[]) : null,
       priority: priorityOf(String(row.origin), Number(row.type), row.notes ? String(row.notes) : null),
+      passageBody: String(row.origin) === "gold" ? row.body : null,
     }
   })
+}
+
+/**
+ * 자극 구간을 옮긴다. 골드 스텁을 쓸 수 있게 만드는 핵심 동작이다.
+ * 좌표는 **지문 본문 기준**으로 받는다(검수 화면이 지문 전문을 보여주므로).
+ * 문맥은 그 구간을 담은 문장으로 자동 설정한다 — 학생에게는 그 문장만 나간다.
+ */
+export async function updateStimulus(
+  id: string,
+  span: { start: number; end: number },
+): Promise<{ ok: boolean; error?: string; text?: string }> {
+  const { rows } = await db.execute({
+    sql: `SELECT t.id, p.body FROM pc_tasks t JOIN pc_passages p ON p.id = t.passage_id WHERE t.id = ?`,
+    args: [id],
+  })
+  if (!rows.length) return { ok: false, error: "문항을 찾을 수 없습니다." }
+  const body = String(rows[0].body)
+
+  if (span.end <= span.start) return { ok: false, error: "구간이 비어 있습니다." }
+  const text = body.slice(span.start, span.end).trim()
+  if (text.length < 10) return { ok: false, error: "너무 짧습니다. 절 하나를 잡아 주세요." }
+  if (hasHangul(text)) return { ok: false, error: "한글이 섞여 있습니다. 영어 부분만 잡아 주세요." }
+
+  // 실제 시작 위치를 다시 잡는다(앞뒤 공백을 잘라냈으므로)
+  const start = body.indexOf(text, Math.max(0, span.start - 5))
+  const end = start + text.length
+
+  const host = sentences(body).find((s) => start >= s.start && start < s.end)
+  const ctxStart = host ? Math.min(host.start, start) : start
+  const ctxEnd = host ? Math.max(host.end, end) : end
+
+  await db.execute({
+    sql: `UPDATE pc_tasks
+          SET stimulus_start=?, stimulus_end=?, stimulus_text=?,
+              context_start=?, context_end=?, updated_at=datetime('now')
+          WHERE id = ?`,
+    args: [start, end, text, ctxStart, ctxEnd, id],
+  })
+  return { ok: true, text }
 }
 
 export async function taskCounts(): Promise<{ status: string; type: number; n: number }[]> {

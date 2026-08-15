@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { TaskContext } from "@/components/task-context"
 import {
-  approveManyType2, saveGold, setTaskStatus, updateAnswerSpan, type ReviewTask,
+  approveManyType2, saveGold, setTaskStatus, updateAnswerSpan, updateStimulus,
+  type ReviewTask,
 } from "@/app/actions/task-review"
 
 const TYPE_NAME: Record<number, string> = {
@@ -21,6 +22,8 @@ const PRIORITY_LABEL: Record<number, string> = {
 
 function Card({ task, onDone }: { task: ReviewTask; onDone: () => void }) {
   const [span, setSpan] = useState<{ start: number; end: number } | null>(null)
+  // 골드 스텁은 지문에서 절을 골라야 한다. 그 선택은 **지문 본문 기준** 좌표다.
+  const [bodySpan, setBodySpan] = useState<{ start: number; end: number } | null>(null)
   const [goldText, setGoldText] = useState(task.gold?.[0]?.text ?? "")
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
@@ -91,6 +94,41 @@ function Card({ task, onDone }: { task: ReviewTask; onDone: () => void }) {
 
       {task.notes && (
         <p className="rounded-lg bg-[#fffbeb] p-2 text-xs text-[var(--color-ink)]">{task.notes}</p>
+      )}
+
+      {task.passageBody && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold">
+            지문 — 요약문에 대응하는 <span className="text-[var(--color-brand)]">절 하나를 끌어서</span> 고르세요
+          </p>
+          <div className="max-h-64 overflow-y-auto rounded-xl border border-[var(--color-line)] bg-white p-3">
+            <TaskContext
+              context={task.passageBody}
+              stimulus={{ start: -1, end: -1 }}
+              selection={bodySpan}
+              onSelect={setBodySpan}
+            />
+          </div>
+          {bodySpan && (
+            <div className="flex items-center gap-2">
+              <button
+                disabled={busy}
+                onClick={() =>
+                  act(async () => {
+                    const r = await updateStimulus(task.view.id, bodySpan)
+                    if (!r.ok) throw new Error(r.error)
+                  })
+                }
+                className="rounded-xl border border-[var(--color-brand)] px-3 py-1.5 text-sm font-semibold text-[var(--color-brand)]"
+              >
+                이 절을 자극으로 지정
+              </button>
+              <span className="truncate text-xs text-[var(--color-muted)]">
+                «{task.passageBody.slice(bodySpan.start, bodySpan.end).replace(/\s+/g, " ").slice(0, 70)}»
+              </span>
+            </div>
+          )}
+        </div>
       )}
 
       {isGoldStub && (
