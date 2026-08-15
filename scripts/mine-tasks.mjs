@@ -113,8 +113,39 @@ for (const d of drafts) {
   inserted++
 }
 
+// ── 사라진 후보 정리 ────────────────────────────────────────
+// 채굴 규칙이 바뀌면 예전에 뽑혔던 후보가 이번에는 안 나온다. INSERT 만 하면
+// 그것들이 DB 에 그대로 남아 **학생에게 나갈 수 있다.**
+// (실제로 "the sharp division of time into past" 처럼 중간이 잘린 자극을 규칙에서
+//  걷어냈는데도 DB 에 남아 있었다. 적재 건수만 보고 있으면 못 알아챈다.)
+// 사람이 손댄 것(raw 가 아닌 것)은 지우지 않는다 — 검수 결과가 사라지면 안 된다.
+const alive = new Set(drafts.map((d) => d.id))
+const { rows: existing } = await db.execute("SELECT id FROM pc_tasks WHERE review_status = 'raw'")
+const orphans = existing.map((r) => String(r.id)).filter((id) => !alive.has(id))
+for (let i = 0; i < orphans.length; i += 100) {
+  const chunk = orphans.slice(i, i + 100)
+  await db.execute({
+    sql: `DELETE FROM pc_tasks WHERE review_status='raw' AND id IN (${chunk.map(() => "?").join(",")})`,
+    args: chunk,
+  })
+}
+
+// 검수본은 지우지 않는다. 다만 **이번 규칙으로는 안 나오는 것이 승인돼 있으면**
+// 그건 옛 규칙이 만든 문항이 학생에게 계속 나가고 있다는 뜻이라 반드시 알려야 한다.
+const { rows: reviewed } = await db.execute(
+  "SELECT id, review_status FROM pc_tasks WHERE review_status <> 'raw'",
+)
+const staleReviewed = reviewed.filter((r) => !alive.has(String(r.id)))
+
 const total = await db.execute("SELECT type, review_status, count(*) n FROM pc_tasks GROUP BY 1,2 ORDER BY 1,2")
-console.log(`\n적재 ${inserted}건 · 검수본 보존 ${skipped}건`)
+console.log(`\n적재 ${inserted}건 · 검수본 보존 ${skipped}건 · 사라진 후보 정리 ${orphans.length}건`)
+if (staleReviewed.length) {
+  console.warn(
+    `\n⚠ 이번 규칙으로는 안 나오는데 검수 상태인 문항 ${staleReviewed.length}건 —` +
+      ` 옛 규칙이 만든 것이 학생에게 나가고 있을 수 있습니다.`,
+  )
+  for (const r of staleReviewed.slice(0, 10)) console.warn(`   ${r.review_status}  ${r.id}`)
+}
 console.log("DB 현황:", total.rows.map((r) => `유형${r.type}/${r.review_status}=${r.n}`).join(" "))
 
 // 요약문 블록을 가진 지문은 유형 2 골드의 원천이다 — 검수 우선순위 안내

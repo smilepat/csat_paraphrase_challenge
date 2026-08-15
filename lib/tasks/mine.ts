@@ -89,26 +89,78 @@ function looksLikeVerb(middle: string): boolean {
 const STOP_OF =
   /^(and|or|but|which|that|who|whose|because|while|although|may|might|will|would|can|could|shall|should|must|is|are|was|were|be|been|has|have|had|do|does|did|seems?|becomes?)$/
 
-/** of 보문의 끝을 근사한다. 구문 분석이 아니라 근사이므로 후보는 전부 사람이 본다. */
-function ofComplementEnd(body: string, from: number, limit: number): number {
+/**
+ * of 보문의 끝을 근사한다. 구문 분석이 아니라 근사이므로 후보는 전부 사람이 본다.
+ *
+ * **자연스럽게 끝나지 않으면 null 을 준다.** 낱말 수 상한에 걸려 끊긴 자리는
+ * 어구 경계가 아니라서 "the sharp division of time into past" 처럼 중간이 잘린
+ * 자극이 나온다(표본 10개 중 3개가 그랬다). 그런 문항은 학생을 헷갈리게 하므로
+ * 뽑지 않는 편이 낫다 — 유형 2 는 공급이 넉넉하다(137편/43%).
+ */
+/**
+ * of 보문의 끝을 근사한다.
+ *
+ * 다섯 번을 고쳐 보고 방침을 바꿨다. 정규식으로 명사구 경계를 **정확히** 잡으려 하면
+ * 계속 새로운 실패가 나온다 — 낱말 수 상한에 걸려 잘리고, 쉼표에서 나열이 끊기고,
+ * 나열을 이어 붙이면 술부를 먹고, 문맥 없이 부른 동사 판정이 수식어를 동사로 본다.
+ *
+ * 그래서 **정확한 경계를 잡는 대신 확실한 것만 뽑는다.** 조금이라도 애매하면 버린다:
+ *   · 쉼표가 들어가면 버린다(나열인지 삽입구인지 구별하려다 계속 틀렸다)
+ *   · 낱말 수 상한에 걸리면 버린다(중간에서 잘린 자리다)
+ *   · of 뒤에 내용어가 없으면 버린다("the experience of" 같은 껍데기)
+ * 유형 2 는 공급이 넉넉하므로(137편/43%) 엄격해도 문항이 모자라지 않는다.
+ */
+/**
+ * 끝에 매달린 기능어를 떼어 낸다.
+ * 문장이 "…everyone being judged." 처럼 끝나면 뒤에 낱말이 없어 수식어 규칙이
+ * 구조적으로 발동할 수 없고, "the performance of everyone **being**" 이 남는다.
+ * 경계를 더 정교하게 잡으려 하기보다 꼬리를 자르는 편이 확실하다.
+ */
+const TRAILING_JUNK = /\s+(being|been|having|of|the|a|an|in|on|at|to|for|with|by|from|and|or|as|than|that|which)$/i
+
+function trimTrailing(text: string): string {
+  let out = text.trimEnd()
+  for (let i = 0; i < 3; i++) {
+    const next = out.replace(TRAILING_JUNK, "")
+    if (next === out) break
+    out = next
+  }
+  return out
+}
+
+const MAX_OF_WORDS = 8
+
+function ofComplementEnd(body: string, from: number, limit: number): number | null {
   let i = from
   let words = 0
-  while (i < limit && words < 8) {
-    while (i < limit && /\s/.test(body[i])) i++
+  let prevWord = ""
+  let prevStart = -1
+  while (i < limit && words < MAX_OF_WORDS) {
+    while (i < limit && /\s/.test(body[i]!)) i++
     const start = i
-    while (i < limit && !/[\s,;:.!?]/.test(body[i])) i++
-    const w = body.slice(start, i).toLowerCase()
+    const windowStart = prevStart >= 0 ? prevStart : start
+    while (i < limit && !/[\s,;:.!?]/.test(body[i]!)) i++
+    const w = body.slice(start, i)
     if (!w) break
+    const lower = w.toLowerCase()
+
+    if (STOP_OF.test(lower)) return words > 0 ? start : null
+    // 문맥 없이 부르면 "an ever more **varied** set" 의 varied 를 동사로 본다.
+    // 게다가 수식어 판정은 **뒤에 낱말이 있어야** 발동하므로("being judged" 만으로는
+    // 절대 안 걸린다) 앞뒤를 모두 담은 창을 넘긴다. 창 안의 다른 낱말이 동사로
+    // 잡히면 안 되므로 **이 낱말이 바로 그 동사일 때만** 멈춘다.
+    const hit = findFiniteVerb(body.slice(windowStart, Math.min(limit, i + 25)))
+    if (hit.finite && hit.cue === lower) return words > 0 ? start : null
+    if (lower.startsWith("(")) return words > 0 ? start : null
+
     words++
-    if (STOP_OF.test(w)) return start
-    // 정형동사를 만나면 명사구는 이미 끝났다. STOP_OF 는 조동사·계사만 담고 있어
-    // "the representation of cowardly people **makes** us cowardly" 같은 어휘동사를
-    // 놓친다 — 구조 검사기를 그대로 재사용해 막는다.
-    if (findFiniteVerb(w).finite) return start
-    if (i < limit && /[,;:.!?]/.test(body[i])) return i
-    if (w.startsWith("(")) return start
+    prevWord = lower
+    prevStart = start
+    if (i < limit && body[i] === ",") return null // 쉼표가 끼면 버린다
+    if (i < limit && /[;:.!?]/.test(body[i]!)) return i
   }
-  return Math.min(i, limit)
+  // 문장 끝에 닿았으면 자연스러운 끝. 상한에 걸린 것이면 잘린 것이다.
+  return i >= limit && words > 0 ? limit : null
 }
 
 function contentWords(text: string, freq: FreqRank): string[] {
@@ -174,7 +226,8 @@ export function minePassage(
     const host = sentenceAt(start)
     if (!host || hasHangul(host.text)) continue
     const end = ofComplementEnd(body, start + m[0].length, host.end)
-    const text = body.slice(start, end).trim()
+    if (end === null) continue // 중간에서 잘린 자극은 내지 않는다
+    const text = trimTrailing(body.slice(start, end).trim())
     if (text.length < 12 || hasHangul(text)) continue
 
     // 요약문 안의 명사화라면 문맥이 구분자 글리프까지 거슬러 올라가지 않게 자른다

@@ -114,7 +114,8 @@ for (const p of IRREGULAR_PAST) INFLECTED.add(p)
 
 /** 원형이 정형이 되는 자리(they explain)를 잡기 위한 복수·1·2인칭 주어. */
 /** 이 낱말 뒤의 -ed 는 서술어가 아니라 수식어다. */
-const MODIFIER_BEFORE = /ly$|^(of|the|a|an|in|on|at|for|with|by|from|its|their|his|her|our|your|my)$/
+const MODIFIER_BEFORE =
+  /ly$|^(of|the|a|an|in|on|at|for|with|by|from|its|their|his|her|our|your|my|more|most|less|least|very|ever|quite|rather|so|too|being|been|having)$/
 
 const COPULA_S_SUBJECT = new Set(["it", "he", "she", "that", "there", "this", "what", "who", "here"])
 
