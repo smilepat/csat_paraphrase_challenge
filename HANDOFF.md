@@ -890,3 +890,36 @@ npx vercel env pull /tmp/check.txt --environment=production   # 확인 후 삭�
 
 새로 쓴 골드 검수 테스트가 `test.skip(골드가 없으면)` 이라 **조용히 건너뛰고 있었다.**
 e2e 셋업이 골드를 안 심었기 때문이다. 골드 스텁을 셋업에 추가해 실제로 돌게 했다.
+
+---
+
+## 22. 골드 11건 채움
+
+2026-08-15. `npm run tasks:gold [-- --apply]` — 기본은 미리보기.
+
+40번 요약문 정답 쌍 11건을 사람이 정해 스크립트 표에 박고, 스크립트는 그 판단을
+지문 좌표로 옮기기만 한다. **프로덕션 유형 2 승인 185건**(일반 174 + 골드 11).
+
+| 문항 | 정답 쌍 (절 → 이름) |
+|---|---|
+| 2015·40 | People vary a great deal both in the intensity … and in the form → **the degrees and forms of people's actual responses** |
+| 2025·40 | synthetic ingredients can be made in a precisely controlled fashion → **the controllability of the production process** |
+| 2025·40 | natural ingredients often vary appreciably → **the variability of natural food ingredients** |
+| 2024·40 | Knowledge gained earlier … condensing into formulas → **the previously gained knowledge in simplified forms** |
+| 2023·40 | schools may fail … workplaces may not truly value → **factors that limit its full development** |
+| 2022·40 | consists in the unification … under a minimal number of generalizations → **the least number of principles** |
+| 2020·40 | **the strength of the social bond** → how much they are socially tied *(unfold)* |
+| 2019·40 | **preference for current consumption** → people tend to favor more immediate outputs *(unfold)* |
+| 2017·40 | are related to the type of tourism, … the distance → **factors such as …** |
+| 2016·40 | broad, influential factors … that hold down the performance → **contextual factors** |
+| 2014·40 | foster the rather undesirable impression of being an irresponsible consumer → **save face** |
+
+2020·40 과 2019·40 은 지문 쪽이 이미 명사구라 **방향이 반대**다(unfold).
+
+### 밟은 함정 둘
+
+- **지문에 문장 중간 줄바꿈이 있다.** 조각을 `indexOf` 로 찾으면 11건 중 4건이
+  안 잡힌다. 공백 종류를 무시하는 정규식으로 찾아야 한다.
+- **`db.execute({sql})` 에 `args` 를 빼면 원격에서만 죽는다**
+  (`Object.entries(undefined)`). 파일 클라이언트는 봐주고 HTTP 클라이언트는 안 봐준다 —
+  **로컬 성공이 원격 성공을 보장하지 않는다.**

@@ -26,7 +26,8 @@
     "typed:calibrate1": "vite-node scripts/calibrate-type1.mjs",
     "tasks:queue": "vite-node scripts/review-queue.mjs",
     "typed:cache": "vite-node scripts/verdict-cache.mjs",
-    "tasks:sync": "vite-node scripts/sync-approvals.mjs"
+    "tasks:sync": "vite-node scripts/sync-approvals.mjs",
+    "tasks:gold": "vite-node scripts/seed-gold-pairs.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
