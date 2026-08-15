@@ -135,7 +135,7 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
 
           {view.type === 1 && view.avoidWords.length > 0 && (
             <p className="text-xs text-[var(--color-muted)]">
-              쓰지 않을 낱말:{" "}
+              다르게 표현할 낱말:{" "}
               <span className="font-semibold text-[var(--color-ink)]">
                 {view.avoidWords.join(" · ")}
               </span>

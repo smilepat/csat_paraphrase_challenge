@@ -17,12 +17,16 @@
 export type Type1Input = {
   answer: string
   stimulus: string
-  /** 채굴 때 정한 재사용 금지 내용어. 없으면 자극에서 즉석으로 만든다. */
+  /**
+   * 다르게 표현해야 할 내용어. 없으면 자극에서 즉석으로 만든다.
+   * **금지 목록이 아니다** — 과제는 회피가 아니라 치환이다. 쓰면 벌하는 것이 아니라
+   * 바꾸지 않은 만큼 점수가 덜 오른다.
+   */
   avoidWords: string[]
 }
 
 export type Type1Free = {
-  /** 0~1. 금지어를 하나도 안 쓰면 1 */
+  /** 0~1. 대상 낱말을 모두 다른 말로 바꿨으면 1 */
   avoidance: number
   /** 그대로 다시 쓴 낱말 */
   reused: string[]
@@ -53,7 +57,7 @@ function contentTokens(text: string): string[] {
 }
 
 /**
- * 무료 1단. 금지어를 얼마나 피했는가.
+ * 무료 1단. 대상 낱말을 얼마나 다른 말로 바꿨는가.
  * **굴절형도 재사용으로 본다** — "variability" 를 "variable" 로 바꾼 것은
  * 다른 단어로 말한 것이 아니라 같은 낱말을 굴려 쓴 것이다.
  */
@@ -76,15 +80,15 @@ export function checkAvoidance(input: Type1Input): Type1Free {
       fail: true,
       message:
         reused.length > 0
-          ? `원문의 낱말을 그대로 썼습니다 — ${reused.slice(0, 4).join(", ")}. 같은 뜻을 다른 낱말로 말해 보세요.`
-          : "원문을 거의 그대로 옮겼습니다.",
+          ? `${reused.slice(0, 4).join(", ")} 은(는) 아직 원문 그대로입니다. 같은 뜻을 다른 낱말로 말해 보세요.`
+          : "원문을 거의 그대로 옮겼습니다. 자기 말로 바꿔 보세요.",
     }
   }
   return {
     avoidance,
     reused,
     fail: false,
-    message: reused.length ? `아직 남은 낱말: ${reused.slice(0, 3).join(", ")}` : "",
+    message: reused.length ? `아직 바꾸지 않은 낱말: ${reused.slice(0, 3).join(", ")}` : "",
   }
 }
 
@@ -125,7 +129,7 @@ export function finalizeType1(
   if (free.fail) {
     return {
       score: 0,
-      errorName: "지문 단어를 그대로 씀",
+      errorName: "원문 낱말을 아직 안 바꿈",
       message: free.message,
       suggested: "",
       judged: false,
@@ -148,8 +152,8 @@ export function finalizeType1(
   if (!verdict.reworded) {
     return {
       score: 0,
-      errorName: "지문 단어를 그대로 씀",
-      message: verdict.koreanFeedback || "원문의 낱말을 거의 그대로 썼습니다.",
+      errorName: "원문 낱말을 아직 안 바꿈",
+      message: verdict.koreanFeedback || "낱말이 거의 원문 그대로입니다. 다른 말로 바꿔 보세요.",
       suggested: verdict.suggested,
       judged: true,
       parts: { meaning: MEANING_SCORE[verdict.meaning] / 100, avoidance },

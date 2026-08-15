@@ -88,7 +88,7 @@ function Card({ task, onDone }: { task: ReviewTask; onDone: () => void }) {
 
       {task.view.type === 1 && task.view.avoidWords.length > 0 && (
         <p className="text-xs text-[var(--color-muted)]">
-          금지어: <span className="font-semibold text-[var(--color-ink)]">{task.view.avoidWords.join(" · ")}</span>
+          다르게 표현할 낱말: <span className="font-semibold text-[var(--color-ink)]">{task.view.avoidWords.join(" · ")}</span>
         </p>
       )}
 
