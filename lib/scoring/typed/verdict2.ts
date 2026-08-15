@@ -14,6 +14,8 @@
 // (교수 설계의 오답 5종과 같은 어휘를 쓴다).
 // ============================================================
 
+import { createHash } from "node:crypto"
+
 import { callGemini, isLlmEnabled, parseGeminiJson } from "../../gemini"
 
 export type Type2Form = "noun_phrase" | "clause" | "other"
@@ -116,6 +118,17 @@ function coerce(raw: unknown, id: string): Type2Verdict {
     suggested: typeof o.suggested === "string" ? o.suggested.slice(0, 200) : "",
   }
 }
+
+/**
+ * 프롬프트 지문. **템플릿에서 자동으로 뽑는다** — 손으로 버전을 올리는 방식이면
+ * 프롬프트를 고치고 버전을 안 올리는 날이 반드시 온다. 그러면 캐시가 옛 판정을
+ * 계속 돌려준다. 여기서는 문구를 한 글자만 바꿔도 지문이 달라져 캐시가 갈린다.
+ */
+export const PROMPT_FINGERPRINT = createHash("sha1")
+  .update(SYSTEM)
+  .update(buildType2Prompt([{ id: "_", stimulus: "_", target: "clause", answer: "_" }]))
+  .digest("hex")
+  .slice(0, 10)
 
 /** 테스트·오프라인용 결정론적 가짜 판정 (PARAPHRASE_FAKE_LLM=1). */
 export function isFakeLlm(): boolean {

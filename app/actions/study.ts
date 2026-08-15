@@ -15,8 +15,7 @@ import { toTaskView, type TaskRow, type TaskView } from "@/lib/tasks/render"
 import { checkAvoidance, finalizeType1 } from "@/lib/scoring/typed/type1"
 import { scoreType2, finalizeType2 } from "@/lib/scoring/typed/type2"
 import { checkSpan, finalizeType3 } from "@/lib/scoring/typed/type3"
-import { judgeType1Batch } from "@/lib/scoring/typed/verdict1"
-import { judgeType2Batch } from "@/lib/scoring/typed/verdict2"
+import { judgeType1Cached, judgeType2Cached } from "@/lib/scoring/typed/cache"
 import { recordAttempt, learnerReport, today } from "@/lib/learners/attempts"
 import { threeAxisProfile, type AttemptRow, type AxisType } from "@/lib/learners/history"
 import { pickNext, type TaskCandidate } from "@/lib/learners/pick"
@@ -162,14 +161,14 @@ export async function submitAnswer(
     // 무료에서 떨어지면 유료 판정을 부르지 않는다 — 비용 설계의 핵심이다
     const verdict = free.fail
       ? null
-      : (await judgeType1Batch([{ id: taskId, stimulus, answer }])).get(taskId) ?? null
+      : (await judgeType1Cached([{ id: taskId, stimulus, answer }])).verdicts.get(taskId) ?? null
     const f = finalizeType1(free, verdict)
     result = { score: f.score, errorName: f.errorName, message: f.message, suggested: f.suggested, judged: f.judged }
   } else if (t.type === 2) {
     const target = (t.target_form ?? "clause") as "noun_phrase" | "clause"
     const free = scoreType2({ answer, stimulus, target })
     const verdict = free.needsVerdict
-      ? (await judgeType2Batch([{ id: taskId, stimulus, target, answer }])).get(taskId) ?? null
+      ? (await judgeType2Cached([{ id: taskId, stimulus, target, answer }])).verdicts.get(taskId) ?? null
       : null
     const f = finalizeType2({ answer, stimulus, target }, free, verdict)
     result = { score: f.score, errorName: f.errorName, message: f.message, suggested: f.suggested, judged: f.judged }
