@@ -397,3 +397,82 @@ npm run typed:measure -- --local   # 정형동사 판별 정확도를 코퍼스�
 ### 다음
 
 `verdict.ts` 연결(2단 의미 판정). `needsVerdict === true` 인 답안만 넘긴다.
+
+---
+
+## 13. M9 2단계 — 유형 2 의미 판정 (유료)
+
+2026-08-15. 구조 검사가 미룬 답안만 LLM 으로 넘긴다.
+
+```bash
+npm run typed:calibrate            # 실 API 2콜(8건씩 배치). 과금됨
+npm run typed:calibrate -- --dry   # 가짜 판정, 무과금
+```
+
+### 무엇을 묻는가
+
+기존 `verdict.ts` 는 **지문 전체의 명제 커버리지**를 잰다. 유형 2 는 그게 아니라
+자극 한 조각과 답안 사이의 **국소 등가성**이라 별도 판정(`verdict2.ts`)을 뒀다.
+
+`meaning` 을 다섯 갈래(`same/narrower/broader/changed/reversed`)로 **강제**한다.
+"뜻이 같은가?"를 예/아니오로 물으면 모델이 관대해진다. 그리고 그 갈래가 그대로
+**오답의 이름**이 된다 — 교수 설계의 오답 5종과 같은 어휘라 학생이 자기 오류를
+분류할 수 있다.
+
+### 캘리브레이션 결과 (14건, 손으로 단 라벨)
+
+| 축 | 일치 |
+|---|---|
+| 의미 | **13/14 (92.9%)** |
+| 형식 | 14/14 (100%) |
+| 뒤집힌 답을 정답 계열로 부름 | **0** ← 통과 조건 |
+
+기준은 의미 80% 이상 **+ reversed 오판 0**. 뒤집힌 답을 정답으로 부르는 것은
+다른 오류보다 훨씬 나쁘므로 따로 건다.
+
+### 밟았던 함정 (M9-2)
+
+- **배치가 조용히 잘린다.** 14건을 `maxOutputTokens: 4096` 으로 한 콜에 보냈더니
+  **뒤 4건이 통째로 사라졌다.** `parseGeminiJson` 이 온전한 객체만 건져 내는 탓에
+  **에러가 나지 않고 개수만 줄었다.** 항목마다 한국어 피드백과 예시가 붙어 출력이 길다.
+  → `BATCH = 8` 로 쪼개고 8192 로 올렸다. 개수가 모자라면 경고를 찍는다.
+- **형식 실패가 의미 판정으로 샌다.** 구조를 못 바꾼 답안에 모델이 `meaning: "changed"` 를
+  주고 피드백에 "절 형태로 바꿔야 합니다"라고 썼다. 프롬프트에 "두 판단은 분리되며
+  서로 영향을 주지 않는다 / 형식 실패는 절대 meaning 에 넣지 말라"를 명시해 고쳤다.
+  71.4% → 78.6%.
+- **부정을 `changed` 로 부른다.** "…cannot be controlled" 를 reversed 가 아니라 changed 로
+  판정했다. "부정·부인은 reversed 다"를 명시해 고쳤다.
+- **라벨이 틀린 경우가 있었다.** `the variability of natural ingredients` →
+  `… of natural **food** ingredients` 를 same 으로 달았는데 실제로는 좁아진 것이라
+  **모델이 옳고 내 라벨이 그랬다.** 모호한 케이스 두 개도 정의상 명확하게 다시 썼다
+  (수량어 하나만 바꾸는 식으로). 78.6% → 92.9%.
+  ⚠ 라벨을 모델 출력에 맞춰 고치면 순환이다. 정의로 판정할 수 있을 때만 고쳤다.
+
+### 설계 결정 — 구조 검사가 우선이다
+
+**LLM 의 `form` 판정은 실행마다 흔들린다.** 같은 답안(`the production process can be
+controlled`)이 run 에 따라 `clause` 와 `noun_phrase` 로 갈렸다. 무료 구조 검사는
+실측 95.9% 로 더 정확하고 결정적이다.
+
+그래서 `finalizeType2` 는 **구조 검사가 확신했으면 그 판단을 쓰고, 미뤘을 때만**
+LLM 의 form 을 심판으로 쓴다. 이 순서를 뒤집으면 공짜로 맞힐 것에 돈을 쓰고
+정확도까지 떨어진다. 테스트로 고정했고 변이 검사로 확인했다.
+
+### 지켜볼 것
+
+남은 오답 1건(`s2`)은 **2025·40 의 실제 정답 쌍**이다.
+`natural ingredients often vary in their composition` → `the variability of natural
+ingredients` 를 모델이 `narrower`(‘often’·‘composition’ 누락)로 본다. **모델이 수능보다
+엄격하다.** 운영에서 `narrower` 가 과다 발생하면 이 지점을 의심할 것.
+
+### 파일
+
+| 경로 | 역할 |
+|---|---|
+| `lib/scoring/typed/verdict2.ts` | 유형 2 의미 판정. 배치 8건, 가짜 모드 `PARAPHRASE_FAKE_LLM=1` |
+| `lib/scoring/typed/type2.ts` | `finalizeType2` — 구조 + 의미를 합쳐 점수와 오답 이름 |
+| `scripts/calibrate-type2.mjs` | 손 라벨 14건으로 프롬프트 검증 |
+
+### 다음
+
+M10 학생 세션 + 3축 이력. 자습은 누적이 전부라 이력 없이는 M12(적응형 출제)를 못 만든다.

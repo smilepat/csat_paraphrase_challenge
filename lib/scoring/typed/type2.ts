@@ -10,6 +10,7 @@
 // ============================================================
 
 import { checkStructure, type StructureVerdict } from "./structure"
+import type { Type2Verdict } from "./verdict2"
 
 export type Type2Target = "noun_phrase" | "clause"
 
@@ -86,6 +87,106 @@ export function scoreType2(input: Type2Input): Type2Result {
     cue: s.cue,
     needsVerdict: true,
     structureScore: null,
+    flags,
+  }
+}
+
+// ── 2단: 의미 판정을 합쳐 최종 점수를 낸다 ────────────────────
+
+/**
+ * 의미 갈래별 점수. 이름은 **교수 설계의 오답 5종과 같은 어휘**를 쓴다 —
+ * 교사가 없는 자습이라 이 문구가 유일한 지도이고, 학생이 자기 오류를
+ * 분류할 수 있어야 다음에 다르게 쓴다.
+ */
+export const MEANING_SCORE = {
+  same: 100,
+  narrower: 60,
+  broader: 50,
+  changed: 20,
+  reversed: 0,
+} as const
+
+export const MEANING_LABEL = {
+  same: "뜻이 같다",
+  narrower: "절반만 맞는 말",
+  broader: "원문보다 크게 말한 것",
+  changed: "비슷하지만 다른 말",
+  reversed: "뜻은 맞는데 방향이 반대",
+} as const
+
+export type Type2Final = {
+  score: number
+  /** 학생에게 보여줄 오답의 이름. 정답이면 null */
+  errorName: string | null
+  message: string
+  suggested: string
+  /** 유료 판정을 실제로 썼는가 */
+  judged: boolean
+  flags: string[]
+}
+
+/**
+ * 구조 결과와 의미 판정을 합친다.
+ *
+ * 형식 관문을 누가 보는가:
+ *   구조 검사가 **확신했으면 그 판단을 쓴다**(명사구 판별 실측 100%).
+ *   미뤘을 때만 LLM 의 form 을 심판으로 쓴다. 이 순서를 뒤집으면
+ *   공짜로 맞힐 수 있는 것에 돈을 쓰고 정확도는 떨어진다.
+ *
+ * 판정이 없으면(LLM 꺼짐·실패) 구조 점수만으로 진행한다 — 채점이 멈추면 안 된다.
+ */
+export function finalizeType2(
+  input: Type2Input,
+  structure: Type2Result,
+  verdict: Type2Verdict | null,
+): Type2Final {
+  const flags = [...structure.flags]
+
+  if (structure.structure === "fail") {
+    return {
+      score: TYPE2.structureFailScore,
+      errorName: "구조를 바꾸지 않음",
+      message: structure.message,
+      suggested: "",
+      judged: false,
+      flags,
+    }
+  }
+
+  if (!verdict) {
+    // 의미를 확인하지 못했다. 통과시키지도 떨어뜨리지도 않는다.
+    return {
+      score: 50,
+      errorName: null,
+      message: "구조는 맞았습니다. 의미 확인은 잠시 뒤에 다시 시도합니다.",
+      suggested: "",
+      judged: false,
+      flags: [...flags, "verdict-missing"],
+    }
+  }
+
+  // 구조 검사가 미뤘던 것만 LLM 의 form 이 심판한다
+  if (structure.structure === "unclear" && verdict.form !== input.target) {
+    return {
+      score: TYPE2.structureFailScore,
+      errorName: "구조를 바꾸지 않음",
+      message:
+        input.target === "noun_phrase"
+          ? "아직 문장입니다. 동사를 지우고 이름 하나로 접어 보세요."
+          : "아직 이름입니다. 주어와 동사를 세워 문장으로 펴 보세요.",
+      suggested: verdict.suggested,
+      judged: true,
+      flags,
+    }
+  }
+
+  const score = MEANING_SCORE[verdict.meaning]
+  return {
+    score,
+    errorName: verdict.meaning === "same" ? null : MEANING_LABEL[verdict.meaning],
+    message: verdict.koreanFeedback || MEANING_LABEL[verdict.meaning],
+    suggested: verdict.suggested,
+    judged: true,
     flags,
   }
 }

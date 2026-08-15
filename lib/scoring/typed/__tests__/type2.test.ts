@@ -156,3 +156,64 @@ describe("킬 기준 — 무료 구조 검사만으로 상·중·하가 갈리�
     expect(hi.verbatim).toBe(0)
   })
 })
+
+// ── 2단 결합: 구조 + 의미 판정 ────────────────────────────────
+import { finalizeType2, MEANING_SCORE } from "../type2"
+import type { Type2Verdict } from "../verdict2"
+
+const v = (over: Partial<Type2Verdict>): Type2Verdict => ({
+  id: "x", form: "clause", meaning: "same", koreanFeedback: "", suggested: "", ...over,
+})
+
+describe("finalizeType2", () => {
+  const unfold = { answer: "", stimulus: "the controllability of the process", target: "clause" as const }
+
+  it("구조에서 떨어지면 유료 판정을 쓰지 않는다", () => {
+    const input = { ...unfold, answer: "the controllability of the process" }
+    const r = finalizeType2(input, scoreType2(input), null)
+    expect(r.score).toBe(0)
+    expect(r.judged).toBe(false)
+    expect(r.errorName).toBe("구조를 바꾸지 않음")
+  })
+
+  it("판정을 못 받으면 통과도 실패도 시키지 않는다", () => {
+    const input = { ...unfold, answer: "the process can be controlled" }
+    const r = finalizeType2(input, scoreType2(input), null)
+    expect(r.score).toBe(50)
+    expect(r.flags).toContain("verdict-missing")
+  })
+
+  it("의미 갈래가 그대로 오답의 이름이 된다", () => {
+    const input = { ...unfold, answer: "the process cannot be controlled" }
+    const r = finalizeType2(input, scoreType2(input), v({ meaning: "reversed" }))
+    expect(r.score).toBe(MEANING_SCORE.reversed)
+    expect(r.errorName).toBe("뜻은 맞는데 방향이 반대")
+  })
+
+  it("좁아진 답은 부분 점수를 받는다", () => {
+    const input = { ...unfold, answer: "the process can be controlled" }
+    const r = finalizeType2(input, scoreType2(input), v({ meaning: "narrower" }))
+    expect(r.score).toBe(MEANING_SCORE.narrower)
+    expect(r.score).toBeGreaterThan(0)
+    expect(r.score).toBeLessThan(MEANING_SCORE.same)
+  })
+
+  it("구조 검사가 미룬 것만 LLM 의 form 이 심판한다", () => {
+    // "vary" 는 목록 밖이라 구조 검사가 미룬다(unclear). 이때는 LLM 을 따른다.
+    const input = { answer: "natural ingredients vary a lot", stimulus: "s", target: "noun_phrase" as const }
+    expect(scoreType2(input).structure).toBe("unclear")
+    const r = finalizeType2(input, scoreType2(input), v({ form: "clause", meaning: "same" }))
+    expect(r.score).toBe(0)
+    expect(r.errorName).toBe("구조를 바꾸지 않음")
+  })
+
+  it("구조 검사가 확신했으면 LLM 의 form 이 달라도 뒤집지 않는다", () => {
+    // 실측: 무료 구조 검사 95.9% vs LLM form 은 실행마다 흔들린다.
+    // 확신 있는 판단을 LLM 이 덮으면 정확도가 내려간다 — 이 순서를 고정한다.
+    const input = { ...unfold, answer: "the process can be controlled" }
+    expect(scoreType2(input).structure).toBe("pass")
+    const r = finalizeType2(input, scoreType2(input), v({ form: "noun_phrase", meaning: "same" }))
+    expect(r.score).toBe(MEANING_SCORE.same)
+    expect(r.errorName).toBeNull()
+  })
+})

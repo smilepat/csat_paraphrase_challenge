@@ -20,7 +20,8 @@
     "smoke:prod": "node scripts/prod-smoke.mjs",
     "tasks:mine": "vite-node scripts/mine-tasks.mjs",
     "tasks:verify": "vite-node scripts/verify-tasks.mjs",
-    "typed:measure": "vite-node scripts/measure-structure.mjs"
+    "typed:measure": "vite-node scripts/measure-structure.mjs",
+    "typed:calibrate": "vite-node scripts/calibrate-type2.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
