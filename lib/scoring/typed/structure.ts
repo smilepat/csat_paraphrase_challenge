@@ -250,3 +250,24 @@ export function checkStructure(
     message: `아직 문장입니다 — "${cue}" 가 남아 있습니다. 동사를 지우고 이름 하나로 접어 보세요.`,
   }
 }
+
+/**
+ * 동사처럼 보이는 첫 낱말. **정형인지는 따지지 않는다.**
+ *
+ * 채점에는 못 쓴다(정형 판별이 핵심이므로). 힌트에는 이게 맞다 —
+ * "often vary" 의 vary 는 정형 판별에서 빠지지만, 학생에게 짚어 줘야 할 동사는 그것이다.
+ * 채점 기준을 힌트에 그대로 쓰면 정작 필요한 순간에 침묵한다.
+ */
+export function firstVerbLike(text: string): string | null {
+  const tk = tokens(text)
+  for (let i = 0; i < tk.length; i++) {
+    const w = tk[i]!
+    if (FINITE_MARKERS.has(w) || w === "'s") continue // 조동사·계사는 짚어 줄 대상이 아니다
+    if (INFLECTED.has(w) || BASE_SET.has(w)) {
+      const prev = i > 0 ? tk[i - 1]! : ""
+      if (MODIFIER_BEFORE.test(prev) && i + 1 < tk.length) continue // 수식어 자리
+      return w
+    }
+  }
+  return null
+}

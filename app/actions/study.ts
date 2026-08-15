@@ -19,6 +19,7 @@ import { judgeType1Cached, judgeType2Cached } from "@/lib/scoring/typed/cache"
 import { recordAttempt, learnerReport, today } from "@/lib/learners/attempts"
 import { threeAxisProfile, type AttemptRow, type AxisType } from "@/lib/learners/history"
 import { pickNext, type TaskCandidate } from "@/lib/learners/pick"
+import { hintFor, type Hint } from "@/lib/tasks/hint"
 
 /** 개발 중에는 승인 전 태스크도 쓴다. 운영에서는 승인된 것만 나간다. */
 function allowedStatuses(): string[] {
@@ -125,6 +126,27 @@ export async function nextTask(learnerId: string): Promise<NextTask> {
   return { task: toTaskView(row, row.body), reason: picked.reason }
 }
 
+// ── 힌트 ────────────────────────────────────────────────────
+
+/**
+ * 힌트는 **요청해야 나온다.** 문항과 함께 보내면 학생이 산출을 시도하기 전에 읽는다.
+ * 쓴 사실은 제출 시 flags 에 남는다.
+ */
+export async function taskHint(taskId: string): Promise<Hint> {
+  const { rows } = await db.execute({
+    sql: "SELECT type, direction, stimulus_text, avoid_words FROM pc_tasks WHERE id = ?",
+    args: [taskId],
+  })
+  if (!rows.length) return null
+  const r = rows[0]!
+  return hintFor(
+    Number(r.type),
+    r.direction === null ? null : String(r.direction),
+    String(r.stimulus_text),
+    r.avoid_words ? (JSON.parse(String(r.avoid_words)) as string[]) : [],
+  )
+}
+
 // ── 제출 ────────────────────────────────────────────────────
 
 export type SubmitResult = {
@@ -133,6 +155,8 @@ export type SubmitResult = {
   message: string
   suggested: string
   judged: boolean
+  /** 사람이 정해 둔 정답 쌍. 있으면 채점 뒤에 보여 준다 */
+  gold: string | null
 }
 
 export async function submitAnswer(
@@ -140,6 +164,7 @@ export async function submitAnswer(
   taskId: string,
   answer: string,
   span?: { start: number; end: number },
+  usedHint = false,
 ): Promise<SubmitResult> {
   const { rows } = await db.execute({
     sql: `SELECT t.*, p.body FROM pc_tasks t JOIN pc_passages p ON p.id = t.passage_id
@@ -163,7 +188,7 @@ export async function submitAnswer(
       ? null
       : (await judgeType1Cached([{ id: taskId, stimulus, answer }])).verdicts.get(taskId) ?? null
     const f = finalizeType1(free, verdict)
-    result = { score: f.score, errorName: f.errorName, message: f.message, suggested: f.suggested, judged: f.judged }
+    result = { score: f.score, errorName: f.errorName, message: f.message, suggested: f.suggested, judged: f.judged, gold: null }
   } else if (t.type === 2) {
     const target = (t.target_form ?? "clause") as "noun_phrase" | "clause"
     const free = scoreType2({ answer, stimulus, target })
@@ -171,7 +196,7 @@ export async function submitAnswer(
       ? (await judgeType2Cached([{ id: taskId, stimulus, target, answer }])).verdicts.get(taskId) ?? null
       : null
     const f = finalizeType2({ answer, stimulus, target }, free, verdict)
-    result = { score: f.score, errorName: f.errorName, message: f.message, suggested: f.suggested, judged: f.judged }
+    result = { score: f.score, errorName: f.errorName, message: f.message, suggested: f.suggested, judged: f.judged, gold: null }
   } else {
     if (!span) throw new Error("범위를 표시해 주세요.")
     // 클라이언트는 문맥 기준 오프셋을 보낸다 — 본문 기준으로 되돌린다
@@ -181,7 +206,7 @@ export async function submitAnswer(
       stimulusStart: t.stimulus_start,
     })
     const f = finalizeType3(free, null)
-    result = { score: f.score, errorName: f.errorName, message: f.message, suggested: "", judged: false }
+    result = { score: f.score, errorName: f.errorName, message: f.message, suggested: "", judged: false, gold: null }
   }
 
   await recordAttempt({
@@ -192,9 +217,22 @@ export async function submitAnswer(
     score: result.score,
     errorName: result.errorName,
     judged: result.judged,
+    flags: usedHint ? ["hint"] : undefined,
   })
 
-  return result
+  // 사람이 정해 둔 정답 쌍이 있으면 채점 뒤에 보여 준다.
+  // 40번 요약문 11건이 그렇다 — 가장 좋은 예시가 이미 준비돼 있는데 안 쓸 이유가 없다.
+  const goldRaw = (t as unknown as { gold?: string | null }).gold
+  let gold: string | null = null
+  if (goldRaw) {
+    try {
+      gold = (JSON.parse(String(goldRaw)) as { text: string }[])[0]?.text ?? null
+    } catch {
+      gold = null
+    }
+  }
+
+  return { ...result, gold }
 }
 
 // ── 리포트 ──────────────────────────────────────────────────

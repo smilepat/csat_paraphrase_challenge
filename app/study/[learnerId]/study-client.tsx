@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { nextTask, studyReport, submitAnswer, type NextTask, type SubmitResult } from "@/app/actions/study"
+import { nextTask, studyReport, submitAnswer, taskHint, type NextTask, type SubmitResult } from "@/app/actions/study"
 import { TaskContext } from "@/components/task-context"
 
 type Report = Awaited<ReturnType<typeof studyReport>>
@@ -47,6 +47,7 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
   const [report, setReport] = useState<Report | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [hint, setHint] = useState<{ label: string; body: string } | null>(null)
 
   const load = useCallback(async () => {
     setBusy(true)
@@ -58,6 +59,7 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
       setAnswer("")
       setSpan(null)
       setResult(null)
+      setHint(null)
     } catch (e) {
       setError((e as Error).message)
     } finally {
@@ -74,7 +76,7 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
     setBusy(true)
     setError(null)
     try {
-      const r = await submitAnswer(learnerId, item.task.id, answer, span ?? undefined)
+      const r = await submitAnswer(learnerId, item.task.id, answer, span ?? undefined, hint !== null)
       setResult(r)
       setReport(await studyReport(learnerId))
     } catch (e) {
@@ -162,14 +164,31 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
             />
           )}
 
+          {hint && (
+            <div className="rounded-xl border border-dashed border-[var(--color-brand)] bg-white p-3">
+              <p className="text-[11px] font-bold text-[var(--color-brand)]">{hint.label}</p>
+              <p className="mt-1 text-sm">{hint.body}</p>
+            </div>
+          )}
+
           {!result ? (
-            <button
-              onClick={onSubmit}
-              disabled={busy || !canSubmit}
-              className="w-full rounded-xl bg-[var(--color-brand)] px-4 py-2.5 font-semibold text-white disabled:opacity-40"
-            >
-              {busy ? "채점 중…" : "제출"}
-            </button>
+            <div className="space-y-2">
+              <button
+                onClick={onSubmit}
+                disabled={busy || !canSubmit}
+                className="w-full rounded-xl bg-[var(--color-brand)] px-4 py-2.5 font-semibold text-white disabled:opacity-40"
+              >
+                {busy ? "채점 중…" : "제출"}
+              </button>
+              {!hint && (
+                <button
+                  onClick={async () => setHint(await taskHint(view.id))}
+                  className="w-full rounded-xl border border-[var(--color-line)] px-4 py-2 text-sm font-semibold text-[var(--color-muted)]"
+                >
+                  막혔어요 — 시작점 보기
+                </button>
+              )}
+            </div>
           ) : (
             <div className="space-y-3">
               <div
@@ -190,6 +209,12 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
                   <p className="mt-2 font-serif text-sm text-[var(--color-muted)]">
                     예시: {result.suggested}
                   </p>
+                )}
+                {result.gold && (
+                  <div className="mt-3 rounded-lg bg-white p-2">
+                    <p className="text-[11px] font-bold text-[var(--color-good)]">수능 정답 쌍</p>
+                    <p className="mt-1 font-serif text-sm">{result.gold}</p>
+                  </div>
                 )}
               </div>
               <button

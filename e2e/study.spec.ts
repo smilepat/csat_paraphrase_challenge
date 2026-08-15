@@ -117,3 +117,17 @@ test("같은 기기로 다시 오면 이력이 이어진다", async ({ page }) =
   expect(page.url()).toBe(first)
   await expect(page.getByText(/누적 [1-9]/)).toBeVisible()
 })
+
+test("막혔을 때 시작점을 준다 — 답은 주지 않는다", async ({ page }) => {
+  await enter(page)
+  await expect(page.getByRole("button", { name: "제출" })).toBeVisible({ timeout: 20_000 })
+
+  // 힌트는 **요청해야** 나온다. 문항과 함께 보이면 산출을 시도하기 전에 읽는다.
+  await expect(page.getByText("시작점", { exact: true })).toHaveCount(0)
+
+  await page.getByRole("button", { name: /막혔어요/ }).click()
+  await expect(page.getByText("시작점", { exact: true })).toBeVisible()
+
+  // 한 번 열면 버튼은 사라진다
+  await expect(page.getByRole("button", { name: /막혔어요/ })).toHaveCount(0)
+})
