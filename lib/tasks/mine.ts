@@ -10,6 +10,7 @@
 // ============================================================
 
 import { sentences, splitSummaryBlock, usableSentence, hasHangul } from "./segment"
+import { findFiniteVerb } from "../scoring/typed/structure"
 
 export type TaskDraft = {
   passageId: string
@@ -100,6 +101,10 @@ function ofComplementEnd(body: string, from: number, limit: number): number {
     if (!w) break
     words++
     if (STOP_OF.test(w)) return start
+    // 정형동사를 만나면 명사구는 이미 끝났다. STOP_OF 는 조동사·계사만 담고 있어
+    // "the representation of cowardly people **makes** us cowardly" 같은 어휘동사를
+    // 놓친다 — 구조 검사기를 그대로 재사용해 막는다.
+    if (findFiniteVerb(w).finite) return start
     if (i < limit && /[,;:.!?]/.test(body[i])) return i
     if (w.startsWith("(")) return start
   }
