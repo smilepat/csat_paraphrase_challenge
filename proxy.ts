@@ -59,9 +59,16 @@ export default function proxy(req: NextRequest) {
   } catch {
     return unauthorized()
   }
-  // 사용자명은 무엇이든 받는다. 비밀번호 하나로만 가른다.
-  const given = decoded.slice(decoded.indexOf(":") + 1)
-  return safeEqual(given, password) ? NextResponse.next() : unauthorized()
+  const sep = decoded.indexOf(":")
+  const givenUser = decoded.slice(0, sep)
+  const givenPass = decoded.slice(sep + 1)
+
+  // 아이디는 **설정한 경우에만** 검사한다. 안 걸어 두면 예전처럼 아무 아이디나 받는다
+  // — 이미 쓰고 있는 사람의 로그인을 갑자기 막지 않기 위해서다.
+  const user = process.env.TEACHER_USERNAME?.trim()
+  if (user && !safeEqual(givenUser, user)) return unauthorized()
+
+  return safeEqual(givenPass, password) ? NextResponse.next() : unauthorized()
 }
 
 export const config = {

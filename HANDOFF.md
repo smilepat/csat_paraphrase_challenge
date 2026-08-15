@@ -821,3 +821,36 @@ npm run tasks:sync -- --reset  # 기계 승인을 raw 로 되돌린다(규칙을
   사람이 봐야 한다.
 - 프로덕션 학생 화면은 지금 **유형 2 만** 나온다(다른 축은 승인 0). 3축 프로필의
   유형 1·3 칸은 "아직 안 해봄" 으로 남는다 — 정상이다.
+
+---
+
+## 20. 인증 설정 (교사 아이디 · 학생 초대 코드)
+
+2026-08-15.
+
+| 변수 | 쓰임 | 안 걸어 두면 |
+|---|---|---|
+| `TEACHER_PASSWORD` | `/admin`, `/host` | 운영에서 **503 으로 막힘**(지문 공개 방지) |
+| `TEACHER_USERNAME` | 아이디까지 검사 | 아이디는 아무거나 통과(예전 동작 그대로) |
+| `STUDY_INVITE_CODE` | `/study` 학생 입장 | **아무 코드나 통과** — 운영에서는 반드시 설정 |
+
+`TEACHER_USERNAME` 은 **선택**으로 뒀다. 이미 쓰고 있는 사람의 로그인을 갑자기
+막지 않기 위해서다. 설정하면 그때부터 아이디도 함께 검사한다.
+
+### ⚠ Vercel env CLI 함정 두 개
+
+1. **파이프가 안 먹는다.** `echo "값" | vercel env add NAME production` 은 조용히
+   **빈 문자열**을 넣는다(에러가 안 난다). `--value <VALUE>` 를 써야 한다.
+2. **프로덕션 변수는 기본이 `sensitive` 라 다시 못 읽는다.** `vercel env pull` 이
+   `""` 로 나오는 것이 정상이라, 값이 제대로 들어갔는지 확인할 방법이 없다.
+   확인이 필요하면 `--no-sensitive` 로 넣는다(비밀이 아닌 값에만).
+
+이 둘이 겹치면 **"넣었는데 빈 값이고, 확인해도 빈 값이라 원인을 못 찾는"** 상태가 된다.
+
+```bash
+npx vercel env rm NAME production --yes
+npx vercel env add NAME production --value "값" --no-sensitive --yes
+npx vercel env pull /tmp/check.txt --environment=production   # 확인 후 삭제
+```
+
+⚠ 환경변수는 **재배포해야 적용된다.**

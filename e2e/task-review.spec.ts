@@ -80,3 +80,26 @@ test("되받는 표현보다 뒤를 잡으면 저장을 거절한다", async ({ 
   await article.getByRole("button", { name: "범위 저장" }).click()
   await expect(article.getByText("되받는 표현보다 앞을 잡아야 합니다.")).toBeVisible()
 })
+
+test("아이디를 걸어 두면 아이디도 검사한다", async ({ browser }) => {
+  // playwright.config 의 httpCredentials 는 teacher/e2e-teacher-pw 다.
+  // TEACHER_USERNAME 을 설정하지 않았으므로 아이디는 무엇이든 통과해야 한다
+  // — 이미 쓰고 있는 사람의 로그인을 갑자기 막지 않는다는 규약이다.
+  const ctx = await browser.newContext({
+    httpCredentials: { username: "누구든", password: "e2e-teacher-pw" },
+  })
+  const page = await ctx.newPage()
+  const res = await page.goto("/admin/tasks")
+  expect(res?.status()).toBe(200)
+  await ctx.close()
+})
+
+test("비밀번호가 틀리면 막는다", async ({ browser }) => {
+  const ctx = await browser.newContext({
+    httpCredentials: { username: "teacher", password: "wrong" },
+  })
+  const page = await ctx.newPage()
+  const res = await page.goto("/admin/tasks")
+  expect(res?.status()).toBe(401)
+  await ctx.close()
+})
