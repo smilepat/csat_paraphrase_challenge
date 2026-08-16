@@ -9,9 +9,9 @@ import {
 } from "@/app/actions/task-review"
 
 const TYPE_NAME: Record<number, string> = {
-  1: "다른 단어로",
-  2: "단어 ↔ 문장",
-  3: "앞 내용 묶기",
+  1: "다른 낱말로",
+  2: "이름↔문장",
+  3: "되받는 이름",
 }
 
 const PRIORITY_LABEL: Record<number, string> = {
