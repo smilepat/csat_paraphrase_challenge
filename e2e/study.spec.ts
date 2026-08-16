@@ -62,9 +62,9 @@ test("입장하면 문항이 나오고 3축이 보인다", async ({ page }) => {
   // 3축 프로필이 처음부터 보인다 — 총점이 아니라 축이 자습의 리포트다.
   // 축 이름은 출제된 문항 칩에도 나오므로 축 카드 영역으로 좁혀서 본다.
   const axes = page.locator("div.grid.grid-cols-3")
-  await expect(axes.getByText("유형 1 · 다른 낱말로")).toBeVisible()
-  await expect(axes.getByText("유형 2 · 이름 ↔ 문장")).toBeVisible()
-  await expect(axes.getByText("유형 3 · 되받는 이름")).toBeVisible()
+  await expect(axes.getByText("유형 1 · 다른 단어로")).toBeVisible()
+  await expect(axes.getByText("유형 2 · 단어 ↔ 문장")).toBeVisible()
+  await expect(axes.getByText("유형 3 · 앞 내용 묶기")).toBeVisible()
 
   // 아직 아무것도 안 했으니 세 축 모두 "아직 안 해봄"
   await expect(page.getByText("아직 안 해봄").first()).toBeVisible()

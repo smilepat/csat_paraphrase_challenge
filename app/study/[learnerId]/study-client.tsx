@@ -7,9 +7,9 @@ import { TaskContext } from "@/components/task-context"
 type Report = Awaited<ReturnType<typeof studyReport>>
 
 const AXIS_NAME: Record<number, string> = {
-  1: "다른 낱말로",
-  2: "이름 ↔ 문장",
-  3: "되받는 이름",
+  1: "다른 단어로",
+  2: "단어 ↔ 문장",
+  3: "앞 내용 묶기",
 }
 
 function AxisBars({ report }: { report: Report }) {
@@ -135,7 +135,7 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
 
           {view.type === 1 && view.avoidWords.length > 0 && (
             <p className="text-xs text-[var(--color-muted)]">
-              다르게 표현할 낱말:{" "}
+              다르게 표현할 단어:{" "}
               <span className="font-semibold text-[var(--color-ink)]">
                 {view.avoidWords.join(" · ")}
               </span>

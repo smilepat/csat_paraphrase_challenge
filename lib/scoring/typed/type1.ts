@@ -80,7 +80,7 @@ export function checkAvoidance(input: Type1Input): Type1Free {
       fail: true,
       message:
         reused.length > 0
-          ? `${reused.slice(0, 4).join(", ")} 은(는) 아직 원문 그대로입니다. 같은 뜻을 다른 낱말로 말해 보세요.`
+          ? `${reused.slice(0, 4).join(", ")} 은(는) 아직 원문 그대로입니다. 같은 뜻을 다른 단어로 말해 보세요.`
           : "원문을 거의 그대로 옮겼습니다. 자기 말로 바꿔 보세요.",
     }
   }
@@ -88,7 +88,7 @@ export function checkAvoidance(input: Type1Input): Type1Free {
     avoidance,
     reused,
     fail: false,
-    message: reused.length ? `아직 바꾸지 않은 낱말: ${reused.slice(0, 3).join(", ")}` : "",
+    message: reused.length ? `아직 바꾸지 않은 단어: ${reused.slice(0, 3).join(", ")}` : "",
   }
 }
 
@@ -129,7 +129,7 @@ export function finalizeType1(
   if (free.fail) {
     return {
       score: 0,
-      errorName: "원문 낱말을 아직 안 바꿈",
+      errorName: "원문 단어를 아직 안 바꿈",
       message: free.message,
       suggested: "",
       judged: false,
@@ -141,7 +141,7 @@ export function finalizeType1(
     return {
       score: Math.round(50 * avoidance),
       errorName: null,
-      message: "낱말은 바꿨습니다. 의미 확인은 잠시 뒤에 다시 시도합니다.",
+      message: "단어는 바꿨습니다. 의미 확인은 잠시 뒤에 다시 시도합니다.",
       suggested: "",
       judged: false,
       parts: { meaning: 0.5, avoidance },
@@ -152,8 +152,8 @@ export function finalizeType1(
   if (!verdict.reworded) {
     return {
       score: 0,
-      errorName: "원문 낱말을 아직 안 바꿈",
-      message: verdict.koreanFeedback || "낱말이 거의 원문 그대로입니다. 다른 말로 바꿔 보세요.",
+      errorName: "원문 단어를 아직 안 바꿈",
+      message: verdict.koreanFeedback || "단어가 거의 원문 그대로입니다. 다른 말로 바꿔 보세요.",
       suggested: verdict.suggested,
       judged: true,
       parts: { meaning: MEANING_SCORE[verdict.meaning] / 100, avoidance },

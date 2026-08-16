@@ -6,9 +6,9 @@
 // 그건 그날의 학습이 통째로 사라지는 것이다.
 //
 // 다만 **답을 주지는 않는다.** 어디서 시작할지만 알려 준다:
-//   접기(fold)   → 이 문장의 핵심 동사가 무엇인지. 그 동사를 이름으로 바꾸는 데서 시작한다.
-//   펴기(unfold) → 이 이름의 머리 낱말이 무엇인지. 그 낱말을 풀어 문장을 세운다.
-//   유형 1       → 바꿀 낱말 하나를 집어 준다(전부가 아니라 하나만).
+//   접기(fold)   → 이 문장의 핵심 동사가 무엇인지. 그 동사를 명사로 바꾸는 데서 시작한다.
+//   펴기(unfold) → 이 명사구의 머리 단어가 무엇인지. 그 낱말을 풀어 문장을 세운다.
+//   유형 1       → 바꿀 단어 하나를 집어 준다(전부가 아니라 하나만).
 //   유형 3       → 어디서부터 볼지(직전 문장) 알려 준다.
 //
 // 힌트는 **요청해야 나온다.** 산출을 먼저 시도하게 하려는 것이고, 썼다는 사실은
@@ -43,11 +43,11 @@ export function hintFor(
     // 정형 판별은 "often vary" 같은 것을 놓친다. 힌트에서는 느슨한 쪽을 먼저 쓴다.
     const cue = firstVerbLike(stimulus) ?? findFiniteVerb(stimulus).cue
     const subject = roughSubject(stimulus)
-    if (!cue) return { label: "시작점", body: "문장의 동사를 찾아 그것을 이름(명사)으로 바꾸는 데서 시작해 보세요." }
+    if (!cue) return { label: "시작점", body: "문장의 동사를 찾아 명사로 바꾸는 데서 시작해 보세요." }
     return {
       label: "시작점",
       body:
-        `핵심 동사는 “${cue}” 입니다. 이 동사를 **이름(명사)** 으로 바꾸고, ` +
+        `핵심 동사는 “${cue}” 입니다. 이 동사를 **명사**로 바꾸고, ` +
         (subject ? `“${subject}” 을(를) of 뒤에 붙여 보세요.` : "무엇에 대한 것인지를 of 뒤에 붙여 보세요.") +
         `  예: the …ity / …tion / …ment of …`,
     }
@@ -55,11 +55,11 @@ export function hintFor(
 
   if (type === 2 && direction === "unfold") {
     const head = headNoun(stimulus)
-    if (!head) return { label: "시작점", body: "이 이름을 누가·무엇이 어떻게 하는지로 풀어 보세요." }
+    if (!head) return { label: "시작점", body: "이 명사구를 누가·무엇이 어떻게 하는지로 풀어 보세요." }
     return {
       label: "시작점",
       body:
-        `머리 낱말은 “${head}” 입니다. 이 낱말을 **동사나 형용사로 풀고**, ` +
+        `머리 단어는 “${head}” 입니다. 이 단어를 **동사나 형용사로 풀고**, ` +
         `주어를 세워 문장으로 만들어 보세요.  예: how … is / can be …`,
     }
   }
@@ -70,7 +70,7 @@ export function hintFor(
       label: "시작점",
       body: first
         ? `한 번에 다 바꾸지 않아도 됩니다. “${first}” 하나만 다른 말로 바꾸는 것부터 해 보세요.`
-        : "핵심 낱말 하나만 다른 말로 바꾸는 것부터 해 보세요.",
+        : "핵심 단어 하나만 다른 말로 바꾸는 것부터 해 보세요.",
     }
   }
 

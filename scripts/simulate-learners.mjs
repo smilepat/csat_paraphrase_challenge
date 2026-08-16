@@ -88,7 +88,7 @@ for (const [name, skill] of Object.entries(PERSONAS)) {
       rows.push({
         persona: name, type: 1, day,
         score: free1.fail ? 0 : Math.round(avoidanceScore(free1.avoidance) * 100),
-        errorName: free1.fail ? "원문 낱말을 아직 안 바꿈" : null,
+        errorName: free1.fail ? "원문 단어를 아직 안 바꿈" : null,
       })
 
       // 유형 2

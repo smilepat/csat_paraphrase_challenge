@@ -9,9 +9,9 @@ import {
 } from "@/app/actions/task-review"
 
 const TYPE_NAME: Record<number, string> = {
-  1: "다른 낱말로",
-  2: "이름 ↔ 문장",
-  3: "되받는 이름",
+  1: "다른 단어로",
+  2: "단어 ↔ 문장",
+  3: "앞 내용 묶기",
 }
 
 const PRIORITY_LABEL: Record<number, string> = {
@@ -88,7 +88,7 @@ function Card({ task, onDone }: { task: ReviewTask; onDone: () => void }) {
 
       {task.view.type === 1 && task.view.avoidWords.length > 0 && (
         <p className="text-xs text-[var(--color-muted)]">
-          다르게 표현할 낱말: <span className="font-semibold text-[var(--color-ink)]">{task.view.avoidWords.join(" · ")}</span>
+          다르게 표현할 단어: <span className="font-semibold text-[var(--color-ink)]">{task.view.avoidWords.join(" · ")}</span>
         </p>
       )}
 

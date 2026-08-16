@@ -62,7 +62,7 @@ export function checkSpan(input: Type3Input): Type3Free {
     return {
       iou: 0,
       verdict: "invalid",
-      message: "되받는 이름은 **앞의** 내용을 받습니다. 표현보다 앞에서 범위를 찾아보세요.",
+      message: "이 표현은 **앞의** 내용을 묶습니다. 표현보다 앞에서 범위를 찾아보세요.",
       nameWorthJudging: false,
     }
   }
