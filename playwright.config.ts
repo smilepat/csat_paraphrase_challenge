@@ -33,6 +33,10 @@ export default defineConfig({
       // 테스트가 실수로 실제 API 를 때리는 일이 없게 한다.
       GEMINI_API_KEY: "",
       TEACHER_PASSWORD: "e2e-teacher-pw",
+      // .env.local 에 실제 값이 있으면 그대로 새어 들어온다. 실제로 TEACHER_USERNAME 을
+      // 설정한 순간 e2e 6개가 401 로 깨졌다 — 인증·입장 관련 값은 전부 여기서 덮는다.
+      TEACHER_USERNAME: "teacher",
+      STUDY_INVITE_CODE: "E2E",
       TURSO_DATABASE_URL: "file:./e2e.db",
       NODE_ENV: "production",
     },

@@ -1,0 +1,53 @@
+{
+  "_note": "CI·신규 클론용 지문 픽스처. 수능 원문은 저작권 때문에 레포에 둘 수 없으므로 여기에는 직접 쓴 지문만 넣는다. 형식만 원천(csat-reasoning-bridge-builder/public/passages.json)과 맞춘다: passage / questionTypeKo / id. 길이는 import-passages.mjs 의 100~200단어 창 안이어야 한다. 명제·모범답안도 여기에 함께 둔다 — global-setup 이 이걸 그대로 심어 검수 화면 테스트가 지문 3편 모두를 쓸 수 있게 한다.",
+  "passages": [
+    {
+      "id": "E2E_FIX_01",
+      "questionTypeKo": "빈칸 추론",
+      "year": 2026,
+      "topic": "학습",
+      "passage": "Many tutoring programs measure success by how quickly a student reaches the right answer. The measurement is convenient, but it hides something important. A student who can always reach for assistance never develops the habit of working through confusion alone, and confusion is where the real labor of understanding happens. Wrestling with a difficult problem and then repairing the error leaves a firmer trace in memory than hearing the solution immediately. This is not an argument against teaching. It is an argument about timing. Assistance that arrives after an honest attempt strengthens what the student has already begun to construct, while assistance that arrives before the attempt quietly replaces it. The gap between the two is invisible on a quiz taken the same afternoon, and it is decisive on a quiz taken a month later. What looks like efficiency in the classroom can be borrowing against the future.",
+      "propositions": [
+        "Quick assistance raises immediate scores but conceals a hidden cost.",
+        "Students who lean on help never learn to sit with their own confusion.",
+        "Repairing an error yourself leaves a firmer trace than being told the answer."
+      ],
+      "modelAnswers": [
+        "Immediate help lifts today's score, yet only private struggle builds lasting understanding.",
+        "Teaching works better after an attempt, because effort is what memory holds on to."
+      ]
+    },
+    {
+      "id": "E2E_FIX_02",
+      "questionTypeKo": "요지",
+      "year": 2026,
+      "topic": "기술",
+      "passage": "Tools change what people notice. A carpenter who carries a level begins to see whether surfaces are true, and a photographer who carries a camera begins to see how light falls across a room. The instrument does not simply record the world; it trains attention, and trained attention reshapes what counts as worth recording. This is why the arrival of a new measuring device often precedes the arrival of a new science rather than following it. Before the thermometer, heat was a quality that people described with adjectives. After it, heat became a quantity that people could argue about with numbers. The device did not discover temperature so much as make temperature a thing one could disagree about precisely. Every instrument therefore carries a quiet argument about which differences in the world deserve to be treated as real.",
+      "propositions": [
+        "Instruments train attention rather than merely recording facts.",
+        "A new measuring device usually arrives before the science that depends on it.",
+        "Turning a quality into a quantity lets people disagree about it precisely."
+      ],
+      "modelAnswers": [
+        "Measuring devices shape what people notice, and so decide which differences count as real.",
+        "By making qualities countable, instruments create the disagreements that sciences grow from."
+      ]
+    },
+    {
+      "id": "E2E_FIX_03",
+      "questionTypeKo": "주제",
+      "year": 2026,
+      "topic": "도시",
+      "passage": "Cities are often described as places where strangers live close together, but the more useful description is that cities are places where strangers must cooperate without knowing one another. A crowded sidewalk works because thousands of people make small adjustments every second, none of them negotiated in advance. Traffic moves because drivers trust that other drivers will follow rules they cannot enforce. These adjustments are so ordinary that residents rarely notice them, and they notice only when the arrangement fails. The failure is instructive. A single blocked intersection reveals how much invisible coordination the ordinary day required. What holds a city together, then, is not affection between neighbors but a dense web of small reliable expectations. Those expectations are cheap to maintain and expensive to rebuild once broken, which is why neglect damages a city more slowly and more permanently than any sudden shock.",
+      "propositions": [
+        "Urban life depends on cooperation between people who never meet.",
+        "Countless unnoticed adjustments keep crowds and traffic moving.",
+        "Shared expectations are cheap to keep and costly to restore."
+      ],
+      "modelAnswers": [
+        "What binds a city is not warmth between neighbours but reliable habits nobody negotiates.",
+        "Cities run on quiet mutual expectations, which slow neglect damages more than sudden shocks."
+      ]
+    }
+  ]
+}
