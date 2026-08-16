@@ -41,6 +41,35 @@ for (const f of fail.slice(0, 12)) {
 }
 if (fail.length > 12) console.log(`\n  … 외 ${fail.length - 12}건`)
 
+// ── 재개방된 자리 승인 ──────────────────────────────────────
+// recheck → mine 을 돌리면 반려된 자리에 새 후보가 raw 로 들어온다. 그 후보는
+// 이미 현재 기준을 통과한 것들이므로 여기서 바로 승인한다. 골드 스텁만 남긴다 —
+// 빈칸 (A)/(B) 가 곧 정답이라 사람이 정답 쌍을 채워야 나갈 수 있다.
+if (process.argv.includes("--approve-new")) {
+  const { rows: raws } = await db.execute({
+    sql: `SELECT id, origin, gold, stimulus_text s FROM pc_tasks
+          WHERE type=2 AND direction='fold' AND review_status='raw'`,
+    args: [],
+  })
+  const ok = []
+  const hold = []
+  for (const r of raws) {
+    const gold = JSON.parse(String(r.gold ?? "null"))
+    const filled = Array.isArray(gold) && gold.length > 0 && !/\([AB]\)/.test(gold[0]?.text ?? "")
+    const pass = String(r.origin) === "gold" ? filled : isFoldable(String(r.s))
+    ;(pass ? ok : hold).push(String(r.id))
+  }
+  console.log(`\n재개방 후보 ${raws.length}건 → 승인 ${ok.length}건 · 보류(골드 미기입) ${hold.length}건`)
+  for (let i = 0; i < ok.length; i += 100) {
+    const c = ok.slice(i, i + 100)
+    await db.execute({
+      sql: `UPDATE pc_tasks SET review_status='approved', updated_at=datetime('now')
+            WHERE id IN (${c.map(() => "?").join(",")})`,
+      args: c,
+    })
+  }
+}
+
 if (process.argv.includes("--apply")) {
   const ids = fail.map((f) => f.id)
   let n = 0
@@ -54,6 +83,9 @@ if (process.argv.includes("--apply")) {
     n += res.rowsAffected
   }
   console.log(`\n반려 ${n}건`)
+}
+
+if (process.argv.some((a) => a === "--apply" || a === "--approve-new")) {
   const st = await db.execute(
     `SELECT type, direction, review_status, count(*) c FROM pc_tasks
      GROUP BY 1,2,3 ORDER BY 1,2,3`,
