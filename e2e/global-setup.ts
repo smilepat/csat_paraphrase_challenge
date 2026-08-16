@@ -2,7 +2,7 @@
 // 이전 실행이 남긴 승인 지문·방이 있으면 "승인한 지문"과 "방이 고른 지문"이
 // 어긋나 테스트가 엉뚱한 이유로 실패한다(실제로 그렇게 한 번 실패했다).
 import { execFileSync } from "node:child_process"
-import { existsSync, rmSync } from "node:fs"
+import { existsSync, readFileSync, rmSync } from "node:fs"
 import { createClient } from "@libsql/client"
 
 const E2E_URL = "file:./e2e.db"
@@ -14,7 +14,15 @@ export default async function globalSetup() {
 
   const env = { ...process.env, TURSO_DATABASE_URL: E2E_URL, TURSO_AUTH_TOKEN: "" }
   execFileSync("node", ["scripts/run-schema.mjs"], { env, stdio: "pipe" })
-  execFileSync("node", ["scripts/import-passages.mjs"], { env, stdio: "pipe" })
+
+  // 지문 원천은 이 PC 에만 있는 경로다(수능 원문이라 레포에 둘 수 없다).
+  // ⚠ 그래서 CI 에서는 e2e 가 **여기서 죽어 한 번도 실행된 적이 없었다** —
+  //   실패 로그를 보고서야 알았다. 원천이 없으면 직접 쓴 픽스처로 대체한다.
+  //   픽스처 지문은 저작권과 무관한 자작이고, 형식만 원천과 맞춘다.
+  const realSrc = process.env.PASSAGES_JSON || "C:/tmp/csat-reasoning-bridge-builder/public/passages.json"
+  const src = existsSync(realSrc) ? realSrc : "e2e/fixtures/passages.json"
+  if (src !== realSrc) console.log(`[e2e-setup] 지문 원천이 없어 픽스처를 씁니다 — ${src}`)
+  execFileSync("node", ["scripts/import-passages.mjs", src], { env, stdio: "pipe" })
 
   // 보강 결과(명제·모범답안)를 개발 DB 에서 복사한다. API 를 다시 부르지 않기 위해서다.
   // 개발 DB 가 없으면 최소 픽스처를 직접 넣는다(신규 클론·CI 대비).
@@ -35,22 +43,24 @@ export default async function globalSetup() {
     }
   }
 
+  // 개발 DB 가 없으면(CI·신규 클론) 픽스처가 들고 있는 명제·모범 답안을 심는다.
+  // ⚠ **세 편 전부** 심어야 한다. 예전에는 첫 한 편만 심었는데, 검수 화면 테스트보다
+  //   앞선 테스트가 그 한 편을 승인해 버려 "검수 대기 0" 이 되고 화면이 비었다.
+  //   지문이 수백 편인 이 PC 에서는 드러나지 않고 CI 에서만 터지는 종류의 결함이다.
   if (copied === 0) {
-    await dst.execute({
-      sql: `UPDATE pc_passages SET propositions=?, model_answers=?, review_status='draft'
-            WHERE id = (SELECT id FROM pc_passages ORDER BY id LIMIT 1)`,
-      args: [
-        JSON.stringify([
-          "Fast guidance improves short-term results for learners.",
-          "Learners who always depend on help fail to build independence.",
-          "Struggling and correcting mistakes builds stronger understanding.",
-        ]),
-        JSON.stringify([
-          "Fast help works at first, but struggle teaches students to think alone.",
-          "Guidance speeds results, yet mistakes build real independent thinking.",
-        ]),
-      ],
-    })
+    const fixture = JSON.parse(readFileSync("e2e/fixtures/passages.json", "utf8"))
+    for (const p of fixture.passages as Array<{
+      id: string
+      propositions: string[]
+      modelAnswers: string[]
+    }>) {
+      const res = await dst.execute({
+        sql: `UPDATE pc_passages SET propositions=?, model_answers=?, review_status='draft'
+              WHERE id=?`,
+        args: [JSON.stringify(p.propositions), JSON.stringify(p.modelAnswers), p.id],
+      })
+      copied += res.rowsAffected
+    }
   }
 
   const c = await dst.execute("SELECT review_status, COUNT(*) n FROM pc_passages GROUP BY review_status")
