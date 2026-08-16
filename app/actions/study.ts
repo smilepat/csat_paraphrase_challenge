@@ -19,7 +19,7 @@ import { judgeType1Cached, judgeType2Cached } from "@/lib/scoring/typed/cache"
 import { recordAttempt, learnerReport, today } from "@/lib/learners/attempts"
 import { threeAxisProfile, type AttemptRow, type AxisType } from "@/lib/learners/history"
 import { pickNext, type TaskCandidate } from "@/lib/learners/pick"
-import { hintFor, type Hint } from "@/lib/tasks/hint"
+import { hintSteps, type HintMaterial, type HintStep } from "@/lib/tasks/hint"
 
 /** 개발 중에는 승인 전 태스크도 쓴다. 운영에서는 승인된 것만 나간다. */
 function allowedStatuses(): string[] {
@@ -132,18 +132,27 @@ export async function nextTask(learnerId: string): Promise<NextTask> {
  * 힌트는 **요청해야 나온다.** 문항과 함께 보내면 학생이 산출을 시도하기 전에 읽는다.
  * 쓴 사실은 제출 시 flags 에 남는다.
  */
-export async function taskHint(taskId: string): Promise<Hint> {
+export async function taskHint(taskId: string): Promise<HintStep[]> {
   const { rows } = await db.execute({
-    sql: "SELECT type, direction, stimulus_text, avoid_words FROM pc_tasks WHERE id = ?",
+    sql: "SELECT type, direction, stimulus_text, avoid_words, hints FROM pc_tasks WHERE id = ?",
     args: [taskId],
   })
-  if (!rows.length) return null
+  if (!rows.length) return []
   const r = rows[0]!
-  return hintFor(
+  // 힌트 재료는 build-hints.mjs 가 미리 넣어 둔다. 없으면 전략 칸만 나온다 —
+  // 그래도 예전과 같은 만큼은 도와준다.
+  let material: HintMaterial | null = null
+  try {
+    material = r.hints ? (JSON.parse(String(r.hints)) as HintMaterial) : null
+  } catch {
+    material = null
+  }
+  return hintSteps(
     Number(r.type),
     r.direction === null ? null : String(r.direction),
     String(r.stimulus_text),
     r.avoid_words ? (JSON.parse(String(r.avoid_words)) as string[]) : [],
+    material,
   )
 }
 
@@ -164,7 +173,8 @@ export async function submitAnswer(
   taskId: string,
   answer: string,
   span?: { start: number; end: number },
-  usedHint = false,
+  /** 학생이 연 힌트 칸 수. 0 이면 무도움. */
+  hintLevel = 0,
 ): Promise<SubmitResult> {
   const { rows } = await db.execute({
     sql: `SELECT t.*, p.body FROM pc_tasks t JOIN pc_passages p ON p.id = t.passage_id
@@ -217,7 +227,7 @@ export async function submitAnswer(
     score: result.score,
     errorName: result.errorName,
     judged: result.judged,
-    flags: usedHint ? ["hint"] : undefined,
+    flags: hintLevel > 0 ? [`hint:${hintLevel}`] : undefined,
   })
 
   // 사람이 정해 둔 정답 쌍이 있으면 채점 뒤에 보여 준다.

@@ -37,10 +37,26 @@ for (const f of files) {
     .map((s) => s.trim())
     .filter(Boolean)
 
+  let skipped = 0
   for (const stmt of statements) {
-    await client.execute(stmt)
+    try {
+      await client.execute(stmt)
+    } catch (e) {
+      // ⚠ `ALTER TABLE … ADD COLUMN` 에는 IF NOT EXISTS 가 없다(SQLite).
+      //    두 번째 실행에서 "duplicate column name" 으로 죽으면 그 뒤 파일이
+      //    통째로 안 돌아간다 — 다른 파일은 전부 IF NOT EXISTS 라 멱등인데
+      //    이것 하나 때문에 `npm run db:schema` 를 두 번 못 돌리게 된다.
+      //    **이미 있는 열** 만 넘긴다. 다른 오류는 그대로 던진다.
+      if (/duplicate column name/i.test(String(e?.message ?? e))) {
+        skipped++
+        continue
+      }
+      throw e
+    }
   }
-  console.log(`[schema] ${f} → ${statements.length} statements OK`)
+  console.log(
+    `[schema] ${f} → ${statements.length} statements OK${skipped ? ` (이미 있는 열 ${skipped}개 건너뜀)` : ""}`,
+  )
 }
 
 const tables = await client.execute(

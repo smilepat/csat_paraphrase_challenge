@@ -126,18 +126,36 @@ test("같은 기기로 다시 오면 이력이 이어진다", async ({ page }) =
   await expect(page.getByText(/누적 [1-9]/)).toBeVisible()
 })
 
-test("막혔을 때 시작점을 준다 — 답은 주지 않는다", async ({ page }) => {
+test("힌트는 한 칸씩 열린다 — 답은 마지막에만 나온다", async ({ page }) => {
   await enter(page)
   await expect(page.getByRole("button", { name: "제출" })).toBeVisible({ timeout: 20_000 })
 
   // 힌트는 **요청해야** 나온다. 문항과 함께 보이면 산출을 시도하기 전에 읽는다.
-  await expect(page.getByText("시작점", { exact: true })).toHaveCount(0)
+  await expect(page.getByText(/도움 \d+\//)).toHaveCount(0)
 
   await page.getByRole("button", { name: /막혔어요/ }).click()
-  await expect(page.getByText("시작점", { exact: true })).toBeVisible()
+  const first = page.getByText(/도움 1\//)
+  await expect(first).toBeVisible()
 
-  // 한 번 열면 버튼은 사라진다
-  await expect(page.getByRole("button", { name: /막혔어요/ })).toHaveCount(0)
+  // 첫 칸은 한국어 뜻이다. 여기서 영어 답이 나오면 사다리가 무너진 것이다.
+  const opened = page.locator("main div.border-dashed")
+  await expect(opened).toHaveCount(1)
+  await expect(opened.first()).toContainText("뜻")
+
+  // 총 칸 수를 읽어 끝까지 연다
+  const total = Number((await first.innerText()).match(/도움 1\/(\d+)/)![1])
+  expect(total, "픽스처에 힌트 재료가 없으면 이 검사는 아무것도 안 본다").toBeGreaterThan(1)
+
+  for (let n = 1; n < total; n++) {
+    await page.getByRole("button", { name: /더 도와주세요/ }).click()
+    await expect(opened).toHaveCount(n + 1)
+  }
+
+  // 다 열면 버튼이 사라진다
+  await expect(page.getByRole("button", { name: /막혔어요|더 도와주세요/ })).toHaveCount(0)
+
+  // 앞 칸들은 답을 담지 않고, 마지막 칸에서만 예시 답이 나온다
+  await expect(opened.last()).toContainText("예시 답")
 })
 
 test("백지 대신 빈칸이 든 틀을 준다", async ({ page }) => {
