@@ -30,13 +30,20 @@ async function answerCurrent(page: import("@playwright/test").Page) {
   // (실제로 그렇게 실패했다 — 로케이터 문제로 보이지만 경쟁 상태였다.)
   await expect(page.getByRole("button", { name: "제출" })).toBeVisible({ timeout: 20_000 })
 
+  // 입력 방식이 셋이다: 빈칸 틀 · 자유 입력창 · 범위 끌기.
+  // 하나만 알고 있으면 다른 유형이 나왔을 때 조용히 엉뚱한 길로 빠진다.
+  const slots = page.locator('main input[type="text"], main input:not([type])')
   const textarea = page.locator("textarea")
-  if (await textarea.count()) {
+
+  if (await slots.count()) {
+    const n = await slots.count()
+    for (let i = 0; i < n; i++) await slots.nth(i).fill("different wording")
+  } else if (await textarea.count()) {
     await textarea.fill("Saying the very same idea with completely other vocabulary.")
   } else {
     // 유형 3 — 문맥 앞부분을 끌어서 선택한다.
     // firstChild 를 그냥 쓰면 안 된다: 강조가 문맥 맨 앞에 오면 첫 자식이 <mark> 요소라
-    // 텍스트 오프셋을 못 잡는다. 실제로 그렇게 실패했다. 텍스트 노드를 직접 찾는다.
+    // 텍스트 오프셋을 못 잡는다. 텍스트 노드를 직접 찾는다.
     await page.evaluate(() => {
       const host = document.querySelector("main p.font-serif")
       if (!host) throw new Error("문맥 문단을 찾지 못했습니다")
@@ -53,6 +60,7 @@ async function answerCurrent(page: import("@playwright/test").Page) {
     })
     await expect(page.getByText(/표시한 범위/)).toBeVisible()
   }
+
   await page.getByRole("button", { name: "제출" }).click()
 }
 
@@ -130,4 +138,28 @@ test("막혔을 때 시작점을 준다 — 답은 주지 않는다", async ({ p
 
   // 한 번 열면 버튼은 사라진다
   await expect(page.getByRole("button", { name: /막혔어요/ })).toHaveCount(0)
+})
+
+test("백지 대신 빈칸이 든 틀을 준다", async ({ page }) => {
+  await enter(page)
+  await expect(page.getByRole("button", { name: "제출" })).toBeVisible({ timeout: 20_000 })
+
+  const textarea = page.locator("textarea")
+  if ((await textarea.count()) > 0) {
+    // 틀이 있는 유형이면 자유 입력창 대신 칸이 나온다
+    test.skip(true, "이 문항은 틀이 없는 유형이다")
+  }
+  const slots = page.locator('main input[type="text"], main input:not([type])')
+  if ((await slots.count()) === 0) test.skip(true, "범위 끌기 문항이라 채울 칸이 없다")
+
+  // 칸을 다 채우기 전에는 제출할 수 없다
+  await expect(page.getByRole("button", { name: "제출" })).toBeDisabled()
+
+  const n = await slots.count()
+  for (let i = 0; i < n; i++) await slots.nth(i).fill("something")
+  await expect(page.getByRole("button", { name: "제출" })).toBeEnabled()
+
+  // 틀 없이 쓰겠다고 하면 자유 입력으로 바뀐다
+  await page.getByRole("button", { name: /틀 없이 직접/ }).click()
+  await expect(page.locator("textarea")).toBeVisible()
 })

@@ -1,3 +1,5 @@
+import { scaffoldFor, type Scaffold } from "./scaffold"
+
 // ============================================================
 // 태스크 → 화면에 뿌릴 모델.
 //
@@ -39,6 +41,12 @@ export type TaskView = {
   stimulus: string
   /** 학생에게 보여줄 지시문 */
   prompt: string
+  /**
+   * 답안 틀. 백지 대신 빈칸을 준다 — 한국 고등학생이 영어 명사구를 처음부터
+   * 만들어 내기는 어렵고, 막히면 그날 학습이 사라진다.
+   * 유형 3(범위 끌기)에는 채울 칸이 없으므로 null 이다.
+   */
+  scaffold: Scaffold
 }
 
 const PROMPTS: Record<string, string> = {
@@ -74,6 +82,12 @@ export function toTaskView(task: TaskRow, body: string): TaskView {
     avoidWords: task.avoid_words ? (JSON.parse(task.avoid_words) as string[]) : [],
     stimulus: body.slice(task.stimulus_start, task.stimulus_end),
     prompt: promptFor(task.type, task.direction),
+    scaffold: scaffoldFor(
+      task.type,
+      task.direction,
+      body.slice(task.stimulus_start, task.stimulus_end),
+      task.avoid_words ? (JSON.parse(task.avoid_words) as string[]) : [],
+    ),
   }
 }
 

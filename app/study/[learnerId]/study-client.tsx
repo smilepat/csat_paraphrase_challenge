@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { nextTask, studyReport, submitAnswer, taskHint, type NextTask, type SubmitResult } from "@/app/actions/study"
 import { TaskContext } from "@/components/task-context"
+import { fillScaffold } from "@/lib/tasks/scaffold"
 
 type Report = Awaited<ReturnType<typeof studyReport>>
 
@@ -48,6 +49,9 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hint, setHint] = useState<{ label: string; body: string } | null>(null)
+  // 틀에 채운 값들. 틀이 없거나 학생이 직접 쓰기를 고르면 answer 를 쓴다.
+  const [slots, setSlots] = useState<string[]>([])
+  const [freeWrite, setFreeWrite] = useState(false)
 
   const load = useCallback(async () => {
     setBusy(true)
@@ -60,6 +64,8 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
       setSpan(null)
       setResult(null)
       setHint(null)
+      setSlots([])
+      setFreeWrite(false)
     } catch (e) {
       setError((e as Error).message)
     } finally {
@@ -76,7 +82,7 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
     setBusy(true)
     setError(null)
     try {
-      const r = await submitAnswer(learnerId, item.task.id, answer, span ?? undefined, hint !== null)
+      const r = await submitAnswer(learnerId, item.task.id, composed, span ?? undefined, hint !== null)
       setResult(r)
       setReport(await studyReport(learnerId))
     } catch (e) {
@@ -88,7 +94,15 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
 
   const view = item?.task
   const isSpanTask = view?.type === 3
-  const canSubmit = isSpanTask ? span !== null : answer.trim().length > 0
+  const scaffold = !freeWrite && !isSpanTask ? (view?.scaffold ?? null) : null
+
+  // 틀을 쓰면 칸을 합쳐 답안을 만든다. 채점기는 어느 쪽인지 알 필요가 없다.
+  const composed = scaffold ? fillScaffold(scaffold.frame, slots) : answer
+  const canSubmit = isSpanTask
+    ? span !== null
+    : scaffold
+      ? scaffold.slots.every((_, i) => (slots[i] ?? "").trim().length > 0)
+      : answer.trim().length > 0
 
   return (
     <main className="mx-auto max-w-[640px] px-5 py-8">
@@ -153,6 +167,55 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
                 <span className="text-[var(--color-muted)]">문맥에서 끌어서 선택하세요</span>
               )}
             </p>
+          ) : scaffold ? (
+            <div className="space-y-3">
+              {/* 틀을 그대로 보여 준다 — 어디에 무엇이 들어가는지가 먼저 보여야 한다 */}
+              <p className="rounded-xl bg-white p-3 font-serif text-[1.02rem] leading-relaxed">
+                {scaffold.frame.split(/(\{\d+\})/).map((part, i) => {
+                  const m = part.match(/^\{(\d+)\}$/)
+                  if (!m) return <span key={i}>{part}</span>
+                  const idx = Number(m[1])
+                  return (
+                    <span
+                      key={i}
+                      className="mx-0.5 inline-block min-w-[4.5rem] border-b-2 border-[var(--color-brand)] px-1 text-center font-semibold text-[var(--color-brand)]"
+                    >
+                      {slots[idx]?.trim() || `(${idx + 1})`}
+                    </span>
+                  )
+                })}
+              </p>
+
+              {scaffold.slots.map((slot, i) => (
+                <label key={i} className="block">
+                  <span className="text-xs font-semibold text-[var(--color-muted)]">
+                    ({i + 1}) {slot.hint}
+                  </span>
+                  <input
+                    value={slots[i] ?? ""}
+                    onChange={(e) => {
+                      const next = [...slots]
+                      next[i] = e.target.value
+                      setSlots(next)
+                    }}
+                    disabled={!!result}
+                    className="mt-1 w-full rounded-xl border border-[var(--color-line)] p-2 font-serif disabled:bg-slate-50"
+                  />
+                </label>
+              ))}
+
+              {!result && (
+                <button
+                  onClick={() => {
+                    setAnswer(composed)
+                    setFreeWrite(true)
+                  }}
+                  className="text-xs text-[var(--color-muted)] underline"
+                >
+                  틀 없이 직접 쓸게요
+                </button>
+              )}
+            </div>
           ) : (
             <textarea
               value={answer}
