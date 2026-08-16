@@ -19,6 +19,7 @@
     "db:migrate": "node scripts/migrate-passages.mjs",
     "smoke:prod": "node scripts/prod-smoke.mjs",
     "tasks:mine": "vite-node scripts/mine-tasks.mjs",
+    "tasks:mine3": "vite-node scripts/mine-type3-llm.mjs",
     "tasks:verify": "vite-node scripts/verify-tasks.mjs",
     "typed:measure": "vite-node scripts/measure-structure.mjs",
     "typed:calibrate": "vite-node scripts/calibrate-type2.mjs",
@@ -30,7 +31,8 @@
     "tasks:gold": "vite-node scripts/seed-gold-pairs.mjs",
     "tasks:audit1": "vite-node scripts/audit-type1.mjs",
     "tasks:review3": "vite-node scripts/review-type3.mjs",
-    "tasks:recheck-fold": "vite-node scripts/recheck-fold.mjs"
+    "tasks:recheck-fold": "vite-node scripts/recheck-fold.mjs",
+    "tasks:audit3": "vite-node scripts/audit-type3-llm.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
