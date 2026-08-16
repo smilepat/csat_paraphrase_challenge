@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { nextTask, studyReport, submitAnswer, taskHint, type NextTask, type SubmitResult } from "@/app/actions/study"
+import type { HintStep } from "@/lib/tasks/hint"
 import { TaskContext } from "@/components/task-context"
 import { fillScaffold } from "@/lib/tasks/scaffold"
 
@@ -48,7 +49,9 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
   const [report, setReport] = useState<Report | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [hint, setHint] = useState<{ label: string; body: string } | null>(null)
+  // 힌트 사다리. steps 는 이 문항에서 열 수 있는 전부이고 shown 은 지금까지 연 칸 수다.
+  const [steps, setSteps] = useState<HintStep[]>([])
+  const [shown, setShown] = useState(0)
   // 틀에 채운 값들. 틀이 없거나 학생이 직접 쓰기를 고르면 answer 를 쓴다.
   const [slots, setSlots] = useState<string[]>([])
   const [freeWrite, setFreeWrite] = useState(false)
@@ -63,7 +66,8 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
       setAnswer("")
       setSpan(null)
       setResult(null)
-      setHint(null)
+      setSteps([])
+      setShown(0)
       setSlots([])
       setFreeWrite(false)
     } catch (e) {
@@ -82,7 +86,7 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
     setBusy(true)
     setError(null)
     try {
-      const r = await submitAnswer(learnerId, item.task.id, composed, span ?? undefined, hint !== null)
+      const r = await submitAnswer(learnerId, item.task.id, composed, span ?? undefined, shown)
       setResult(r)
       setReport(await studyReport(learnerId))
     } catch (e) {
@@ -227,12 +231,17 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
             />
           )}
 
-          {hint && (
-            <div className="rounded-xl border border-dashed border-[var(--color-brand)] bg-white p-3">
-              <p className="text-[11px] font-bold text-[var(--color-brand)]">{hint.label}</p>
-              <p className="mt-1 text-sm">{hint.body}</p>
+          {steps.slice(0, shown).map((s) => (
+            <div
+              key={s.level}
+              className="rounded-xl border border-dashed border-[var(--color-brand)] bg-white p-3"
+            >
+              <p className="text-[11px] font-bold text-[var(--color-brand)]">
+                도움 {s.level}/{steps.length} · {s.label}
+              </p>
+              <p className="mt-1 whitespace-pre-line text-sm">{s.body}</p>
             </div>
-          )}
+          ))}
 
           {!result ? (
             <div className="space-y-2">
@@ -243,12 +252,19 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
               >
                 {busy ? "채점 중…" : "제출"}
               </button>
-              {!hint && (
+              {shown < (steps.length || 1) && (
                 <button
-                  onClick={async () => setHint(await taskHint(view.id))}
+                  onClick={async () => {
+                    // 첫 요청에서만 서버를 부른다. 그 뒤로는 이미 받아 둔 칸을 하나씩 연다.
+                    const list = steps.length ? steps : await taskHint(view.id)
+                    if (!steps.length) setSteps(list)
+                    setShown((n) => Math.min(n + 1, list.length))
+                  }}
                   className="w-full rounded-xl border border-[var(--color-line)] px-4 py-2 text-sm font-semibold text-[var(--color-muted)]"
                 >
-                  막혔어요 — 시작점 보기
+                  {shown === 0
+                    ? "막혔어요 — 도움 받기"
+                    : `아직 어려워요 — 더 도와주세요 (${shown}/${steps.length})`}
                 </button>
               )}
             </div>

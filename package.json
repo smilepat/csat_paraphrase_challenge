@@ -20,6 +20,7 @@
     "smoke:prod": "node scripts/prod-smoke.mjs",
     "tasks:mine": "vite-node scripts/mine-tasks.mjs",
     "tasks:mine3": "vite-node scripts/mine-type3-llm.mjs",
+    "tasks:hints": "vite-node scripts/build-hints.mjs",
     "tasks:verify": "vite-node scripts/verify-tasks.mjs",
     "typed:measure": "vite-node scripts/measure-structure.mjs",
     "typed:calibrate": "vite-node scripts/calibrate-type2.mjs",

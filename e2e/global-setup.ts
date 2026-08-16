@@ -120,6 +120,18 @@ async function seedStudyTasks(dst: ReturnType<typeof createClient>) {
   const words = sentence.toLowerCase().match(/[a-z]{4,}/g) ?? []
   const avoid = [...new Set(words)].slice(0, 5)
 
+  // 힌트 사다리를 실제로 시험하려면 **재료가 있어야 한다.** 없으면 전략 칸 하나만
+  // 나오고, 그러면 "여러 칸이 하나씩 열린다" 는 검사가 통과만 하고 아무것도 안 본다.
+  const HINTS = {
+    1: JSON.stringify({
+      gloss: "이만큼의 시간을 들인 공부",
+      shape: "a_____ s_____  (2낱말)",
+      example: "another study",
+    }),
+    2: JSON.stringify({ gloss: "공부가 기억으로 굳는 일", form: "study → studying", example: "the studying of it" }),
+    3: JSON.stringify({ gloss: "앞에서 말한 그것" }),
+  } as Record<number, string>
+
   const tasks = [
     // 유형 1 — 문장을 다른 낱말로
     [`${passageId}#e2e-t1`, 1, null, sStart, sEnd, sStart, sEnd, sentence, null, null, null, JSON.stringify(avoid)],
@@ -134,9 +146,9 @@ async function seedStudyTasks(dst: ReturnType<typeof createClient>) {
       sql: `INSERT OR REPLACE INTO pc_tasks
               (id, passage_id, type, direction, context_start, context_end,
                stimulus_start, stimulus_end, stimulus_text, target_form,
-               answer_start, answer_end, avoid_words, origin, review_status)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?, 'regex', 'approved')`,
-      args: [t[0], passageId, t[1], t[2], t[3], t[4], t[5], t[6], t[7], t[8], t[9], t[10], t[11]],
+               answer_start, answer_end, avoid_words, hints, origin, review_status)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'regex', 'approved')`,
+      args: [t[0], passageId, t[1], t[2], t[3], t[4], t[5], t[6], t[7], t[8], t[9], t[10], t[11], HINTS[t[1]]],
     })
   }
 
