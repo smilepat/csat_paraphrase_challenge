@@ -1310,3 +1310,65 @@ npm run tasks:recheck-fold -- --approve-new   # 새로 열린 후보 승인
                    풀기 approved  57
 유형3 되받는 이름  approved  19 · rejected 11
 ```
+
+---
+
+## 32. CI 가 e2e 를 한 번도 돌린 적이 없었다
+
+PR 을 열고 CI 실패 로그를 열어 보고 알았다.
+
+```
+Error: ENOENT: no such file or directory
+path: 'C:/tmp/csat-reasoning-bridge-builder/public/passages.json'
+   at globalSetup (e2e/global-setup.ts:17:15)
+```
+
+지문 원천이 이 PC 에만 있는 경로다(수능 원문이라 레포에 둘 수 없다).
+CI 는 `globalSetup` 에서 죽었고, 그래서 **e2e 22건이 한 번도 실행되지 않았다.**
+초록 체크가 없어서 눈치챈 게 아니라 다른 이유로 로그를 열다가 발견했다.
+
+### 고친 방법
+
+직접 쓴 지문 3편을 `e2e/fixtures/passages.json` 에 넣고, 원천이 없으면 그걸 쓴다.
+저작권과 무관한 자작이고 형식만 원천과 맞춘다. 명제·모범 답안도 같은 파일에 둔다.
+
+### CI 에서만 터지는 결함 세 개
+
+픽스처로 옮기면서 **이 PC 에서는 구조적으로 드러나지 않는** 결함이 셋 나왔다.
+전부 "데이터가 많아서 가려져 있던" 종류다.
+
+**① 검수 대기 지문이 한 편뿐이면 앞선 테스트가 그것을 소모한다**
+예전 fallback 은 첫 지문 하나만 `draft` 로 올렸다. 지문이 수백 편인 여기서는
+아무 문제가 없지만, 3편짜리 픽스처에서는 앞선 테스트가 그 한 편을 승인해
+검수 화면이 빈 목록을 본다. → 세 편 전부 올린다.
+
+**② 픽스처 지문이 명제와 같은 문구를 담으면 자동 점검이 지적한다**
+지문 본문에 명제 문장을 그대로 넣었더니 "원문을 N단어 연속으로 그대로 씁니다"
+가 걸려 `지적 없음` 배지가 사라졌다. → 지문을 다시 썼다.
+
+**③ 빈 `local.db` 를 개발 DB 로 착각한다**
+```
+LibsqlError: SQLITE_ERROR: no such table: pc_passages
+```
+단위 테스트가 `TURSO_DATABASE_URL` 없이 돌면 `file:./local.db` 로 폴백하면서
+**테이블이 없는 빈 파일**을 만든다. `existsSync("local.db")` 로 판단하면
+그 껍데기를 개발 DB 로 본다. → `hasPassages()` 로 **행이 실제로 있는지** 본다.
+
+### 재현 방법
+
+이 PC 에서 CI 조건을 그대로 만들 수 있다. 앞으로 e2e 를 고칠 때는 두 조건
+모두에서 돌려야 한다.
+
+```bash
+mv local.db local.db.keep && : > local.db      # 빈 껍데기
+PASSAGES_JSON=/nonexistent.json npx playwright test
+rm -f local.db && mv local.db.keep local.db
+```
+
+### 교훈
+
+**초록 체크가 없다는 것과 검사가 통과했다는 것은 다르다.** setup 에서 죽으면
+실패가 뜨긴 하지만 "무엇이 실패했는지" 를 열어 보지 않으면 검사가 아예 안 돌고
+있다는 사실을 모른다. §25 에 적어 둔 것과 같은 종류다 — *걸린 비율이 0%나
+100%면 데이터가 아니라 점검기를 먼저 의심할 것.* 여기서는 **e2e 가 계속 빨간데
+아무도 안 열어 본 것**이 그 신호였다.
