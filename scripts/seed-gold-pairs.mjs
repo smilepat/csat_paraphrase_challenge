@@ -87,6 +87,42 @@ const PAIRS = {
     dir: "fold", form: "noun_phrase",
     gold: "he might foster the rather undesirable impression of being an irresponsible consumer → save face",
   },
+
+  // ── 2차분 ──────────────────────────────────────────────────
+  // 위 12건과 **같은 지문의 다른 슬롯**이다. 그래서 같은 절을 다시 쓰면 안 된다 —
+  // 학생이 한 지문에서 같은 문장을 두 번 접게 된다. 요약문의 빈칸이 (A)/(B) 둘이므로
+  // 슬롯마다 다른 빈칸을 겨냥한다.
+  "CSAT_EVEN_2016_40#t2-02": {
+    // #t2-03 이 (A)"contextual factors" 를 이미 썼다. 이쪽은 그 대비항을 겨냥한다.
+    needle: "Performance must be judged in terms of what is under the control",
+    dir: "fold", form: "noun_phrase",
+    gold: "Performance must be judged in terms of what is under the control of the individuals being evaluated → the controllable factors affecting the individual's performance",
+  },
+  "CSAT_EVEN_2017_40#t2-03": {
+    // #t2-04 가 마지막 문장(요인 나열)을 썼다. 이쪽은 "반응이 엇갈린다" 를 접는다.
+    needle: "their reactions to environmental impacts are mixed",
+    dir: "fold", form: "noun_phrase",
+    gold: "their reactions to environmental impacts are mixed → residents' varied postures toward tourism's environmental influences",
+  },
+  "CSAT_EVEN_2019_40#t2-02": {
+    // #t2-03 은 명사구를 절로 펴는 쪽(unfold)이다. 이쪽은 반대 방향으로 접는다.
+    needle: "discount distant outputs over those available at the present time",
+    dir: "fold", form: "noun_phrase",
+    gold: "organisms discount distant outputs over those available at the present time → the preference for more immediate outputs",
+  },
+  "CSAT_EVEN_2023_40#t2-01": {
+    // #t2-02 가 (B)"발전을 막는 요인" 을 썼다. 이쪽은 (A)"오래 이어져 왔다" 를 겨냥한다.
+    needle: "Craftsmanship names an enduring, basic human impulse",
+    dir: "fold", form: "noun_phrase",
+    gold: "Craftsmanship names an enduring, basic human impulse, the desire to do a job well for its own sake → the persistence of the human desire to do a job well",
+  },
+  "CSAT_EVEN_2025_40#t2-03": {
+    // #t2-04 가 (A)통제 가능성, #t2-01 이 자연 재료의 가변성을 썼다.
+    // 이쪽은 그 가변성이 낳는 결과를 접는다.
+    needle: "These variations can make testing their safety extremely difficult",
+    dir: "fold", form: "noun_phrase",
+    gold: "These variations can make testing their safety extremely difficult → the difficulty of testing natural ingredients' safety",
+  },
 }
 
 // ⚠ args 를 빼면 **원격에서만** 죽는다(`Object.entries(undefined)`).
