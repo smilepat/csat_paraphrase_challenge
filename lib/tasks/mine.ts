@@ -163,16 +163,42 @@ function ofComplementEnd(body: string, from: number, limit: number): number | nu
   return i >= limit && words > 0 ? limit : null
 }
 
+/**
+ * 닫힌 부류(대명사·한정사·접속사 등). 빈도 순위만으로는 안 걸러진다 —
+ * "those / other / while" 은 순위가 300 밖이어도 **다르게 표현할 대상이 아니다.**
+ */
+const CLOSED_CLASS = new Set(`
+those these such other others another same own both each every either neither
+while whereas although though unless until since because therefore however moreover
+their theirs your yours ours whose which what when where whether whom
+more most less least many much some any none all several various certain
+about above across after against along among around before behind below beneath
+beside between beyond during except inside near outside over through toward under
+within without upon onto into likely often always never sometimes usually rather
+quite very just even still also thus hence indeed perhaps maybe
+`.trim().split(/\s+/))
+
+/**
+ * 다르게 표현할 낱말 후보. **적게 고른다.**
+ *
+ * 예전에는 내용어를 12개까지 담았는데, 그러면 문장의 거의 모든 낱말이 목록에 오른다.
+ * 학생에게 "이 문장을 통째로 다시 쓰라"고 요구하는 셈이고, 유형 1 이 재려는 것은
+ * 그게 아니다 — 핵심어 몇 개를 다른 말로 바꿀 수 있는가다.
+ * 그래서 **드문 낱말(의미를 지고 있는 쪽) 순으로 최대 5개**만 고른다.
+ */
+const AVOID_MAX = 5
+
 function contentWords(text: string, freq: FreqRank): string[] {
-  const seen = new Set<string>()
+  const seen = new Map<string, number>()
   for (const raw of text.toLowerCase().match(/[a-z][a-z'-]{3,}/g) ?? []) {
     const w = raw.replace(/^['-]+|['-]+$/g, "")
-    if (w.length < 4) continue
+    if (w.length < 4 || CLOSED_CLASS.has(w)) continue
     const rank = freq[w]
     if (rank !== undefined && rank <= COMMON_RANK) continue
-    seen.add(w)
+    // 빈도표 밖(= 가장 드문 낱말)을 가장 앞에 둔다
+    if (!seen.has(w)) seen.set(w, rank ?? Number.MAX_SAFE_INTEGER)
   }
-  return [...seen]
+  return [...seen.entries()].sort((a, b) => b[1] - a[1]).map(([w]) => w)
 }
 
 /**
@@ -196,7 +222,7 @@ export function minePassage(
   // ── 유형 1 : 문장을 다른 단어로 ────────────────────────────────
   const ranked = readable
     .map((s) => ({ s, words: contentWords(s.text, freq) }))
-    .filter((x) => x.words.length >= 4)
+    .filter((x) => x.words.length >= AVOID_MAX)
     .sort((a, b) => b.words.length - a.words.length)
 
   for (const { s, words } of ranked.slice(0, CAPS.type1)) {
@@ -205,7 +231,7 @@ export function minePassage(
       contextStart: s.start, contextEnd: s.end,
       stimulusStart: s.start, stimulusEnd: s.end, stimulusText: s.text,
       targetForm: null, answerStart: null, answerEnd: null,
-      avoidWords: words.slice(0, 12),
+      avoidWords: words.slice(0, AVOID_MAX),
       gold: null, origin: "regex",
       notes: null,
     })
