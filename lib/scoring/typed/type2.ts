@@ -11,6 +11,7 @@
 
 import { checkStructure, type StructureVerdict } from "./structure"
 import type { Type2Verdict } from "./verdict2"
+import { meaningFeedback, structureFeedback } from "./feedback"
 
 export type Type2Target = "noun_phrase" | "clause"
 
@@ -170,10 +171,7 @@ export function finalizeType2(
     return {
       score: TYPE2.structureFailScore,
       errorName: "구조를 바꾸지 않음",
-      message:
-        input.target === "noun_phrase"
-          ? "아직 문장입니다. 동사를 지우고 이름 하나로 접어 보세요."
-          : "아직 이름입니다. 주어와 동사를 세워 문장으로 펴 보세요.",
+      message: structureFeedback(input.target, structure.cue),
       suggested: verdict.suggested,
       judged: true,
       flags,
@@ -184,7 +182,7 @@ export function finalizeType2(
   return {
     score,
     errorName: verdict.meaning === "same" ? null : MEANING_LABEL[verdict.meaning],
-    message: verdict.koreanFeedback || MEANING_LABEL[verdict.meaning],
+    message: meaningFeedback(verdict.meaning, verdict.koreanFeedback),
     suggested: verdict.suggested,
     judged: true,
     flags,

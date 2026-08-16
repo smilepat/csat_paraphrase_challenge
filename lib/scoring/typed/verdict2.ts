@@ -90,7 +90,10 @@ each other.
    "other"       — a fragment, a list, or not English
 
 Also return:
-- "koreanFeedback": ONE Korean sentence, max 60 characters, naming the single most useful fix.
+- "koreanFeedback": ONE Korean sentence, max 60 characters, telling the student
+  **what to do next** — a concrete action, not a diagnosis.
+  Write it as advice to a learner who tried: "…을 한 가지 더 넣어 보세요", "…를 다시 확인해 보세요".
+  Do NOT restate the error name and do NOT scold. Praise is added separately.
 - "suggested": a correct rewrite in the TARGET form, max 20 words.
 
 Return ONLY a JSON array, one object per item, in the same order, each with

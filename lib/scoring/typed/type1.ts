@@ -103,6 +103,7 @@ export function avoidanceScore(avoidance: number): number {
 // ── 2단: 의미 판정을 곱해 최종 점수를 낸다 ────────────────────
 
 import { MEANING_LABEL, MEANING_SCORE } from "./type2"
+import { meaningFeedback, notRewordedFeedback } from "./feedback"
 import type { Type1Verdict } from "./verdict1"
 
 export type Type1Final = {
@@ -130,7 +131,7 @@ export function finalizeType1(
     return {
       score: 0,
       errorName: "원문 단어를 아직 안 바꿈",
-      message: free.message,
+      message: notRewordedFeedback(free.reused),
       suggested: "",
       judged: false,
       parts: { meaning: 0, avoidance },
@@ -153,7 +154,7 @@ export function finalizeType1(
     return {
       score: 0,
       errorName: "원문 단어를 아직 안 바꿈",
-      message: verdict.koreanFeedback || "단어가 거의 원문 그대로입니다. 다른 말로 바꿔 보세요.",
+      message: notRewordedFeedback([]),
       suggested: verdict.suggested,
       judged: true,
       parts: { meaning: MEANING_SCORE[verdict.meaning] / 100, avoidance },
@@ -164,7 +165,8 @@ export function finalizeType1(
   return {
     score: Math.round(100 * meaning * avoidance),
     errorName: verdict.meaning === "same" ? null : MEANING_LABEL[verdict.meaning],
-    message: verdict.koreanFeedback || MEANING_LABEL[verdict.meaning],
+    // 진단명이 아니라 **인정 + 팁**을 보여 준다. 진단명은 배지로만 남는다.
+    message: meaningFeedback(verdict.meaning, verdict.koreanFeedback),
     suggested: verdict.suggested,
     judged: true,
     parts: { meaning, avoidance },
