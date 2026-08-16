@@ -7,6 +7,18 @@ import { createClient } from "@libsql/client"
 
 const E2E_URL = "file:./e2e.db"
 
+/** 그 DB 에 지문 테이블이 실제로 들어 있는가. 파일 유무와 다르다. */
+async function hasPassages(url: string): Promise<boolean> {
+  if (!existsSync(url.replace(/^file:\.?\/?/, ""))) return false
+  try {
+    const c = createClient({ url })
+    const { rows } = await c.execute("SELECT count(*) n FROM pc_passages")
+    return Number(rows[0]?.n ?? 0) > 0
+  } catch {
+    return false
+  }
+}
+
 export default async function globalSetup() {
   for (const f of ["e2e.db", "e2e.db-journal", "e2e.db-wal", "e2e.db-shm"]) {
     if (existsSync(f)) rmSync(f)
@@ -28,7 +40,11 @@ export default async function globalSetup() {
   // 개발 DB 가 없으면 최소 픽스처를 직접 넣는다(신규 클론·CI 대비).
   const dst = createClient({ url: E2E_URL })
   let copied = 0
-  if (existsSync("local.db")) {
+  // ⚠ 파일이 있는지로 판단하면 안 된다. 단위 테스트가 TURSO_DATABASE_URL 없이 돌면
+  //   `file:./local.db` 로 폴백하면서 **테이블이 없는 빈 파일**을 만든다. CI 에서는
+  //   그 빈 파일 때문에 여기서 "no such table: pc_passages" 로 죽었다.
+  //   그러니 테이블이 실제로 있는지를 본다.
+  if (await hasPassages("file:./local.db")) {
     const src = createClient({ url: "file:./local.db" })
     const { rows } = await src.execute(
       "SELECT id, title, topic, propositions, model_answers FROM pc_passages WHERE propositions IS NOT NULL",
