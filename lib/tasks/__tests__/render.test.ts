@@ -63,7 +63,7 @@ describe("toTaskView", () => {
   it("지시문은 유형과 방향으로 갈린다", () => {
     expect(promptFor(2, "fold")).toContain("명사구")
     expect(promptFor(2, "unfold")).toContain("문장")
-    expect(promptFor(1, null)).toContain("다른 말로 바꿔")
+    expect(promptFor(1, null)).toContain("같은 뜻의 다른 말로")
     expect(promptFor(3, "span")).toContain("범위")
   })
 })

@@ -2,24 +2,22 @@ import { describe, expect, it } from "vitest"
 import { fillScaffold, scaffoldFor } from "../scaffold"
 
 describe("scaffoldFor — 백지 대신 빈칸", () => {
-  it("유형 1 은 대상 단어만 빈칸으로 뚫는다", () => {
-    const s = scaffoldFor(
-      1, null,
-      "natural ingredients often vary appreciably in their composition",
-      ["ingredients", "vary", "composition"],
-    )!
-    // 문장은 그대로 남고 대상 단어 자리만 빈칸이 된다
-    expect(s.frame).toContain("often")
+  it("유형 1 은 문맥 문장에서 그 구 하나만 빈칸으로 만든다", () => {
+    const ctx = "Typically, synthetic ingredients can be made in a precisely controlled fashion."
+    const s = scaffoldFor(1, null, "a precisely controlled fashion", ["controlled", "fashion"], ctx)!
+    // 문장은 살아 있고 대상 구 자리만 빈칸이다 — 학생은 그 안에서 자유롭게 다시 말한다
+    expect(s.frame).toContain("Typically, synthetic ingredients")
     expect(s.frame).toContain("{0}")
-    expect(s.slots).toHaveLength(3)
-    expect(s.slots[0].hint).toContain("ingredients")
+    expect(s.frame).not.toContain("precisely controlled")
+    expect(s.slots).toHaveLength(1)
+    expect(s.slots[0].hint).toContain("a precisely controlled fashion")
   })
 
-  it("유형 1 은 굴절형도 빈칸으로 잡는다", () => {
-    const s = scaffoldFor(1, null, "the system varies across regions", ["vary"])!
-    // "vary" 를 찾을 때 "varies" 도 잡아야 한다 — 아니면 빈칸이 안 생긴다
-    expect(s.frame).toContain("{0}")
-    expect(s.frame).not.toContain("varies")
+  it("유형 1 은 단어별 빈칸을 만들지 않는다 — 그러면 구조를 못 바꾼다", () => {
+    const ctx = "natural ingredients often vary appreciably in their composition."
+    const s = scaffoldFor(1, null, "natural ingredients", ["natural", "ingredients"], ctx)!
+    // 칸이 여럿이면 단어 대 단어 치환을 강제하게 된다
+    expect(s.slots).toHaveLength(1)
   })
 
   it("묶기는 the (   ) of (   ) 틀을 준다", () => {
@@ -40,8 +38,8 @@ describe("scaffoldFor — 백지 대신 빈칸", () => {
     expect(scaffoldFor(3, "span", "These variations", [])).toBeNull()
   })
 
-  it("대상 단어가 없으면 유형 1 틀을 만들지 않는다", () => {
-    expect(scaffoldFor(1, null, "some sentence here", [])).toBeNull()
+  it("문맥에서 그 구를 못 찾으면 틀을 만들지 않는다", () => {
+    expect(scaffoldFor(1, null, "not in there", [], "a different sentence")).toBeNull()
   })
 })
 
@@ -55,9 +53,9 @@ describe("fillScaffold", () => {
     expect(fillScaffold("{0} {1}", ["the process", ""])).toBe("the process")
   })
 
-  it("유형 1 처럼 문장 안에 칸이 있어도 합쳐진다", () => {
-    expect(fillScaffold("natural {0} often {1}", ["materials", "differ"]))
-      .toBe("natural materials often differ")
+  it("문장 안에 칸이 있어도 합쳐진다", () => {
+    expect(fillScaffold("synthetic ingredients are made in {0}.", ["a tightly managed way"]))
+      .toBe("synthetic ingredients are made in a tightly managed way.")
   })
 })
 

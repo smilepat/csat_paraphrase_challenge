@@ -10,7 +10,7 @@
 // ============================================================
 
 import { sentences, splitSummaryBlock, usableSentence, hasHangul } from "./segment"
-import { findFiniteVerb } from "../scoring/typed/structure"
+import { findFiniteVerb, firstVerbLike } from "../scoring/typed/structure"
 
 export type TaskDraft = {
   passageId: string
@@ -202,6 +202,57 @@ function contentWords(text: string, freq: FreqRank): string[] {
 }
 
 /**
+ * 문장에서 **다시 말할 구 하나**를 고른다.
+ *
+ * 단어 수로 좌우를 넓히면 "insights and intuitions **that**" 이나
+ * "Surprises can fall **from**" 처럼 매달린 조각이 나온다. 그래서 **명사구 구조**로 잡는다:
+ * 드문 명사를 머리로 두고 **왼쪽 수식어만** 끌어온다. 오른쪽으로는 넓히지 않는다.
+ *
+ * 사례집의 실제 정답 쌍이 그 모양이다 — "a precisely controlled fashion → controllability".
+ */
+const MODIFIER_SUFFIX = /(?:ed|ing|ous|al|ive|ic|able|ible|ful|less|ary|ent|ant|ly)$/
+const DETERMINER_W = /^(?:a|an|the|this|these|those|his|her|their|our|its|no|every|each)$/i
+
+function isModifier(w: string): boolean {
+  const lower = w.toLowerCase()
+  if (DETERMINER_W.test(lower)) return true
+  if (w.includes("-")) return true
+  if (MODIFIER_SUFFIX.test(lower) && lower.length > 4) return true
+  return false
+}
+
+function pickPhrase(
+  sentence: string,
+  rareFirst: string[],
+): { start: number; end: number; text: string } | null {
+  for (const w of rareFirst) {
+    // 동사를 머리로 삼으면 "the brain replays" 같은 절 조각이 된다. 명사만 머리로 쓴다.
+    if (firstVerbLike(w)) continue
+    const esc = w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    const m = sentence.match(new RegExp(`\\b${esc}[a-z-]*\\b`, "i"))
+    if (!m || m.index === undefined) continue
+
+    // 왼쪽 수식어만 최대 3 개까지 끌어온다
+    let left = m.index
+    for (let k = 0; k < 3; k++) {
+      const before = sentence.slice(0, left).match(/([A-Za-z][A-Za-z-]*)(\s*)$/)
+      if (!before) break
+      if (/[,;:.!?]/.test(before[2] ?? "")) break
+      if (!isModifier(before[1]!)) break
+      left = left - before[1]!.length - (before[2]?.length ?? 0)
+    }
+
+    const text = sentence.slice(left, m.index + m[0].length).trim()
+    const words = text.split(/\s+/).length
+    if (words < 2 || words > 6 || hasHangul(text)) continue
+    const offset = sentence.indexOf(text, Math.max(0, left - 2))
+    if (offset < 0) continue
+    return { start: offset, end: offset + text.length, text }
+  }
+  return null
+}
+
+/**
  * 한 지문의 태스크 후보 전부.
  * 요약문 블록(40번)은 읽기 지문이 아니므로 유형 1·3 에서 제외하고,
  * 유형 2 에서는 오히려 **사람이 만든 정답 쪽**이므로 origin='gold' 로 표시한다.
@@ -219,19 +270,32 @@ export function minePassage(
   const sentenceAt = (pos: number) => sents.find((s) => pos >= s.start && pos < s.end)
   const inSummary = (pos: number) => pos >= passageEnd
 
-  // ── 유형 1 : 문장을 다른 단어로 ────────────────────────────────
+  // ── 유형 1 : 구(句)를 같은 뜻의 다른 말로 ─────────────────
+  // ⚠ 예전에는 **문장 전체**를 주고 내용어를 하나씩 바꾸라고 했다. 그건 유형 1 이
+  //   아니다 — 사례집의 다섯 장치(파생·동의어·상위어·비유 해독·관용어 압축)는 전부
+  //   **구 단위**다. "a precisely controlled fashion → controllability" 처럼.
+  //   단어 대 단어 치환은 "long-term 을 다른 말로" 같은 불가능한 요구를 만든다.
   const ranked = readable
     .map((s) => ({ s, words: contentWords(s.text, freq) }))
-    .filter((x) => x.words.length >= AVOID_MAX)
+    .filter((x) => x.words.length >= 2)
     .sort((a, b) => b.words.length - a.words.length)
 
-  for (const { s, words } of ranked.slice(0, CAPS.type1)) {
+  for (const { s: sent, words } of ranked.slice(0, CAPS.type1)) {
+    const phrase = pickPhrase(sent.text, words)
+    if (!phrase) continue
+    // 내용어가 하나뿐인 구("the insights")는 다시 말하기가 너무 쉽다.
+    // 사례집의 실제 사례는 "a precisely controlled fashion" 처럼 수식어가 붙어 있다.
+    const inside = contentWords(phrase.text, freq)
+    if (inside.length < 2) continue
+    const start = sent.start + phrase.start
+    const end = sent.start + phrase.end
     out.push({
       passageId, type: 1, direction: null,
-      contextStart: s.start, contextEnd: s.end,
-      stimulusStart: s.start, stimulusEnd: s.end, stimulusText: s.text,
+      contextStart: sent.start, contextEnd: sent.end,
+      stimulusStart: start, stimulusEnd: end,
+      stimulusText: body.slice(start, end),
       targetForm: null, answerStart: null, answerEnd: null,
-      avoidWords: words.slice(0, AVOID_MAX),
+      avoidWords: inside.slice(0, 4),
       gold: null, origin: "regex",
       notes: null,
     })

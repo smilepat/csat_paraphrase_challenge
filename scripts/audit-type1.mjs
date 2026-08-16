@@ -37,16 +37,25 @@ for (const r of rows) {
 
   if (/[가-힣]/.test(s)) bad.push("한글")
   if (/\(\s*[AB]\s*\)/.test(s)) bad.push("빈칸표시")
-  if (s.length > 260) bad.push(`김 ${s.length}`)
-  if (s.length < 60) bad.push(`짧음 ${s.length}`)
-  if (avoid.length < 3) bad.push(`대상어 ${avoid.length}개`)
 
-  // 대상 낱말이 자극에 실제로 있어야 한다(대소문자·굴절은 무시)
-  const missing = avoid.filter((w) => !new RegExp(esc(w), "i").test(s))
+  // ⚠ 기준은 **구 단위**다. 예전 문장 단위 기준(60자 이상)을 그대로 두면
+  //   129건 전부가 "짧음" 으로 걸린다. 점검기가 데이터보다 늦게 바뀌면 그렇게 된다.
+  const words = s.split(/\s+/).length
+  if (words < 2) bad.push(`한 단어(${s})`)
+  if (words > 6) bad.push(`너무 긺 ${words}단어`)
+  if (s.length < 8) bad.push(`짧음 ${s.length}자`)
+  if (avoid.length < 2) bad.push(`대상어 ${avoid.length}개`)
+
+  // 매달린 기능어로 시작·끝나면 구가 아니다
+  if (/^(and|or|but|that|which|to|of|in|on|for|with)/i.test(s)) bad.push("기능어로 시작")
+  if (/(and|or|but|that|which|to|of|in|on|for|with|the|a|an)$/i.test(s)) bad.push("기능어로 끝남")
+
+  // 대상 단어가 자극에 실제로 있어야 한다(대소문자·굴절은 무시)
+  const missing = avoid.filter((w) => !new RegExp(esc(w).slice(0, Math.max(3, w.length - 2)), "i").test(s))
   if (missing.length) bad.push(`자극에 없음: ${missing.join(",")}`)
 
-  // 고유명사만 바꾸라고 하면 "다르게 표현"이 아니라 이름 바꾸기가 된다
-  const propers = avoid.filter((w) => new RegExp(`\\b${esc(w[0].toUpperCase() + w.slice(1))}\\b`).test(s))
+  // 고유명사만 바꾸라고 하면 "다르게 표현" 이 아니라 이름 바꾸기가 된다
+  const propers = avoid.filter((w) => new RegExp(`\b${esc(w[0].toUpperCase() + w.slice(1))}\b`).test(s))
   if (propers.length >= avoid.length) bad.push("고유명사 위주")
 
   if (bad.length) flagged.push({ id: String(r.id), s, bad, avoid })

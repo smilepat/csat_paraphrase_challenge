@@ -137,9 +137,10 @@ describe("minePassage", () => {
     expect(gold.every((d) => d.notes?.includes("검수"))).toBe(true)
   })
 
-  it("유형1 은 흔한 낱말을 회피 대상으로 삼지 않는다", () => {
+  it("유형1 은 흔한 단어를 대상으로 삼지 않는다", () => {
     for (const d of drafts.filter((x) => x.type === 1)) {
-      expect(d.avoidWords!.length).toBeGreaterThanOrEqual(4)
+      // 구 단위라 대상 단어는 두 개면 충분하다(문장 전체가 아니다)
+      expect(d.avoidWords!.length).toBeGreaterThanOrEqual(2)
       expect(d.avoidWords).not.toContain("the")
       expect(d.avoidWords).not.toContain("their")
     }

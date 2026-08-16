@@ -50,7 +50,7 @@ export type TaskView = {
 }
 
 const PROMPTS: Record<string, string> = {
-  "1": "밑줄 친 부분을 다시 쓰세요. 아래 단어는 **다른 말로 바꿔** 표현합니다.",
+  "1": "밑줄 친 부분을 **같은 뜻의 다른 말로** 다시 쓰세요.",
   "2:fold": "밑줄 친 문장을 **명사구 하나로 묶으세요.** 동사를 남기지 않습니다.",
   "2:unfold": "밑줄 친 명사구를 **문장으로 푸세요.** 주어와 동사를 세웁니다.",
   "3:span": "밑줄 친 표현이 **앞의 무엇을 받는지** 범위를 끌어서 표시하세요.",
@@ -87,6 +87,7 @@ export function toTaskView(task: TaskRow, body: string): TaskView {
       task.direction,
       body.slice(task.stimulus_start, task.stimulus_end),
       task.avoid_words ? (JSON.parse(task.avoid_words) as string[]) : [],
+      context,
     ),
   }
 }

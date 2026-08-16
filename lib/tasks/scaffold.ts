@@ -76,27 +76,31 @@ export function scaffoldFor(
   direction: string | null,
   stimulus: string,
   avoidWords: string[],
+  context?: string,
 ): Scaffold {
-  // ── 유형 1 : 대상 단어만 빈칸으로 뚫는다 ──────────────────
+  // ── 유형 1 : 문맥 문장에서 **그 구 하나만** 빈칸 ──────────
+  // 예전에는 문장의 내용어를 하나씩 빈칸으로 뚫었다. 그건 단어 대 단어 치환을
+  // 강제해 **구조를 바꿀 길을 막았고**, 유형 1 이 재려는 것(구를 같은 뜻의 다른 말로)이
+  // 아니었다. 이제 칸은 하나이고, 그 안에서 학생이 자유롭게 다시 말한다.
   if (type === 1) {
-    const targets = avoidWords.slice(0, 5)
-    if (targets.length === 0) return null
-    let frame = stimulus.replace(/\s+/g, " ")
-    const slots: Slot[] = []
-    const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-    targets.forEach((w) => {
-      // 정확히 같은 단어를 먼저 찾고, 없을 때만 어간으로 넓힌다.
-      // 처음부터 어간으로 찾으면 "vary" 가 "various" 를 잡아 엉뚱한 칸이 뚫리고,
-      // 어간을 아예 안 쓰면 "vary" 가 "varies" 를 못 잡아 칸이 생기지 않는다.
-      const stem = w.replace(/(ies|ied|ying|ing|ed|es|s|y)$/, "")
-      const tries = [new RegExp(`\\b${esc(w)}\\b`, "i")]
-      if (stem.length >= 3) tries.push(new RegExp(`\\b${esc(stem)}[A-Za-z-]*\\b`, "i"))
-      const re = tries.find((r) => r.test(frame))
-      if (!re) return
-      frame = frame.replace(re, `{${slots.length}}`)
-      slots.push({ hint: `“${w}” 를 다른 말로`, source: w })
-    })
-    return slots.length ? { frame, slots } : null
+    const sentence = (context ?? stimulus).replace(/\s+/g, " ")
+    const target = stimulus.replace(/\s+/g, " ").trim()
+    const at = sentence.indexOf(target)
+    if (at < 0) return null
+    // 난이도를 낮추는 단서: 원문이 몇 단어인지 + 길이가 달라도 된다는 점.
+    // 칸을 단어 수만큼 쪼개지는 않는다 — 그러면 "a precisely controlled fashion →
+    // controllability" 처럼 **줄여 쓰는 답**을 막게 된다. 유형 1 의 다섯 장치 중
+    // 파생·관용어 압축이 바로 그 경우다.
+    const n = target.split(/\s+/).length
+    return {
+      frame: sentence.slice(0, at) + "{0}" + sentence.slice(at + target.length),
+      slots: [
+        {
+          hint: `“${target}” 를 같은 뜻의 다른 말로 (원문 ${n}단어 — 더 짧거나 길어도 됩니다)`,
+          source: target,
+        },
+      ],
+    }
   }
 
   // ── 유형 2 묶기 : the (명사) of (대상) ────────────────────
