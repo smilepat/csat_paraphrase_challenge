@@ -90,7 +90,7 @@ async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
       const msg = String((e as Error)?.message ?? e)
       const retriable =
         /fetch failed|ECONNRESET|ETIMEDOUT|socket hang up|terminated|aborted/i.test(msg) ||
-        /(429|500|502|503|504)/.test(msg)
+        /\b(429|500|502|503|504)\b/.test(msg)
       if (!retriable || i === attempts - 1) throw e
       await sleep(1000 * 2 ** i)
     }

@@ -29,7 +29,8 @@
     "tasks:sync": "vite-node scripts/sync-approvals.mjs",
     "tasks:gold": "vite-node scripts/seed-gold-pairs.mjs",
     "tasks:audit1": "vite-node scripts/audit-type1.mjs",
-    "tasks:review3": "vite-node scripts/review-type3.mjs"
+    "tasks:review3": "vite-node scripts/review-type3.mjs",
+    "tasks:recheck-fold": "vite-node scripts/recheck-fold.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",

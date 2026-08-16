@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { hasHangul, sentences, splitSummaryBlock, usableSentence } from "../segment"
-import { minePassage } from "../mine"
+import { isFoldable, minePassage } from "../mine"
 
 // 실제 지문에서 가져온 조각들. 합성 문장으로 시험하면 원천 데이터의 함정
 // (본문에 섞인 한글, 사제 영역 구분자, 동사로 쓰인 껍데기 이름)을 못 잡는다.
@@ -144,6 +144,39 @@ describe("minePassage", () => {
       expect(d.avoidWords).not.toContain("the")
       expect(d.avoidWords).not.toContain("their")
     }
+  })
+
+  // ⚠ 이 묶음은 실제 사고에서 나왔다. isFoldable 의 종속절 정규식에 `\b` 대신
+  //   **백스페이스 문자(U+0008)** 가 들어가 있어 아무것도 걸러내지 못했고,
+  //   그 사실을 승인된 묶기 128건 중 111건이 기준 미달로 드러날 때까지 몰랐다.
+  //   합성 문장이 아니라 그때 새어 나온 실제 문장을 픽스처로 쓴다.
+  describe("isFoldable — 묶기 대상은 단문이어야 한다", () => {
+    it("단문은 통과한다", () => {
+      expect(isFoldable("Small changes in the sensory properties of foods are sufficient to increase food intake.")).toBe(true)
+      expect(isFoldable("Human beings do not enter the world as competent moral agents alone here.")).toBe(true)
+    })
+
+    it("종속절이 있으면 거른다", () => {
+      // 실제로 새어 나갔던 문장 — 줄바꿈이 든 원문 그대로다
+      expect(
+        isFoldable("Back then, ten megahertz was\nso fast that a new word was needed to describe a computer's\nability to quickly perform many tasks."),
+      ).toBe(false)
+      expect(isFoldable("The very trust that this apparent objectivity inspires makes maps powerful.")).toBe(false)
+      expect(isFoldable("This happens because the audience already knows the ending of the story.")).toBe(false)
+    })
+
+    it("의문사절·삽입구·명령문·2인칭을 거른다", () => {
+      expect(isFoldable("During deep sleep the brain replays what it learned during the day today.")).toBe(false)
+      expect(isFoldable("The film director, as compared to the theater director, has finished material.")).toBe(false)
+      expect(isFoldable("Then tell him to keep his eyes closed and move his fingers over it.")).toBe(false)
+      expect(isFoldable("You have to challenge the conventional ways of doing things and innovate.")).toBe(false)
+    })
+
+    it("빈칸 마커가 남은 조각은 거른다", () => {
+      expect(
+        isFoldable("News, especially in its televised form, is constituted not only by its choice of topics but by its ."),
+      ).toBe(false)
+    })
   })
 
   it("유형2 는 목표 구조가 항상 정해져 있다", () => {

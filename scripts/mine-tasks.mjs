@@ -82,11 +82,28 @@ if (dry) {
 // 이미 사람이 검수한 행(review_status != 'raw')은 덮어쓰지 않는다.
 let inserted = 0
 let skipped = 0
+let revived = 0
 for (const d of drafts) {
-  const cur = await db.execute({ sql: "SELECT review_status FROM pc_tasks WHERE id = ?", args: [d.id] })
-  if (cur.rows.length && cur.rows[0].review_status !== "raw") {
-    skipped++
-    continue
+  const cur = await db.execute({
+    sql: "SELECT review_status, stimulus_text FROM pc_tasks WHERE id = ?",
+    args: [d.id],
+  })
+  const prev = cur.rows[0]
+  if (prev && prev.review_status !== "raw") {
+    // 반려된 자리에 **내용이 다른** 후보가 나오면 그것은 반려된 그 문항이 아니다.
+    // 채굴 기준을 고쳐서 자리 전체를 반려한 경우(fold 111건)가 여기 해당한다.
+    // 내용이 같으면 사람이 그 문항 자체를 보고 반려한 것이므로 그대로 둔다.
+    const isNewContent =
+      prev.review_status === "rejected" && String(prev.stimulus_text) !== d.stimulusText
+    if (!isNewContent) {
+      skipped++
+      continue
+    }
+    await db.execute({
+      sql: "UPDATE pc_tasks SET review_status='raw' WHERE id = ?",
+      args: [d.id],
+    })
+    revived++
   }
   await db.execute({
     sql: `INSERT INTO pc_tasks
@@ -138,7 +155,9 @@ const { rows: reviewed } = await db.execute(
 const staleReviewed = reviewed.filter((r) => !alive.has(String(r.id)))
 
 const total = await db.execute("SELECT type, review_status, count(*) n FROM pc_tasks GROUP BY 1,2 ORDER BY 1,2")
-console.log(`\n적재 ${inserted}건 · 검수본 보존 ${skipped}건 · 사라진 후보 정리 ${orphans.length}건`)
+console.log(
+  `\n적재 ${inserted}건 · 검수본 보존 ${skipped}건 · 반려 자리 재개방 ${revived}건 · 사라진 후보 정리 ${orphans.length}건`,
+)
 if (staleReviewed.length) {
   console.warn(
     `\n⚠ 이번 규칙으로는 안 나오는데 검수 상태인 문항 ${staleReviewed.length}건 —` +

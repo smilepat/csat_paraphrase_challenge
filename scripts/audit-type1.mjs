@@ -47,15 +47,18 @@ for (const r of rows) {
   if (avoid.length < 2) bad.push(`대상어 ${avoid.length}개`)
 
   // 매달린 기능어로 시작·끝나면 구가 아니다
-  if (/^(and|or|but|that|which|to|of|in|on|for|with)/i.test(s)) bad.push("기능어로 시작")
-  if (/(and|or|but|that|which|to|of|in|on|for|with|the|a|an)$/i.test(s)) bad.push("기능어로 끝남")
+  if (/^(and|or|but|that|which|to|of|in|on|for|with)\b/i.test(s)) bad.push("기능어로 시작")
+  if (/\b(and|or|but|that|which|to|of|in|on|for|with|the|a|an)$/i.test(s)) bad.push("기능어로 끝남")
 
   // 대상 단어가 자극에 실제로 있어야 한다(대소문자·굴절은 무시)
   const missing = avoid.filter((w) => !new RegExp(esc(w).slice(0, Math.max(3, w.length - 2)), "i").test(s))
   if (missing.length) bad.push(`자극에 없음: ${missing.join(",")}`)
 
   // 고유명사만 바꾸라고 하면 "다르게 표현" 이 아니라 이름 바꾸기가 된다
-  const propers = avoid.filter((w) => new RegExp(`\b${esc(w[0].toUpperCase() + w.slice(1))}\b`).test(s))
+  // ⚠ 템플릿 문자열 안에서는 `\b` 가 **백스페이스 문자**다. 단어 경계로 쓰려면
+  //    `\\b` 로 한 번 더 이스케이프해야 한다. 이걸 놓쳐서 이 검사는 오랫동안
+  //    아무것도 걸러내지 못했다(정규식 리터럴 /\b…/ 과 다르다).
+  const propers = avoid.filter((w) => new RegExp(`\\b${esc(w[0].toUpperCase() + w.slice(1))}\\b`).test(s))
   if (propers.length >= avoid.length) bad.push("고유명사 위주")
 
   if (bad.length) flagged.push({ id: String(r.id), s, bad, avoid })

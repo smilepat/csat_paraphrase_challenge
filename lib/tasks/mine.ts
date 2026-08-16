@@ -202,6 +202,46 @@ function contentWords(text: string, freq: FreqRank): string[] {
 }
 
 /**
+ * 명사구 하나로 묶을 수 있는 문장인가.
+ *
+ * 묶기가 성립하려면 **주어 하나 + 정형동사 하나**여야 한다. 관계절이나 종속절이 끼면
+ * 명사구 하나에 다 담을 수 없고, 학생은 무엇을 버려야 할지 몰라 막힌다.
+ */
+export function isFoldable(text: string): boolean {
+  // 빈칸 문항의 빈 자리가 " ." 로 남는다("… but by its .")
+  if (/\s\.(\s|$)/.test(text)) return false
+  if (/\(\s*[AB]\s*\)/.test(text)) return false
+  if (/[;:]/.test(text)) return false
+  // 관계절·종속절이 있으면 단문이 아니다
+  if (/\b(which|who|whom|whose|that|because|although|though|while|whereas|unless|until)\b/i.test(text)) {
+    return false
+  }
+  // 의문사절도 같은 이유로 뺀다 — "…on what the scientific method can achieve"
+  if (/\b(what|when|where|how|whether)\b/i.test(text)) return false
+  // 괄호·인용부호·숫자 기호가 든 문장은 묶으면 읽을 수 없는 명사구가 된다
+  // ("This 15% (actually －15%) figure would then represent “average” performance.")
+  if (/[()"“”%–—―]|\d/.test(text)) return false
+  // 축약 관계절 — "One exercise in teamwork **I do** at a company retreat is …"
+  if (/\b(?:I|we|you|they|he|she|it)\s+[a-z]+\b/.test(text)) return false
+  // 명령문·2인칭은 명사구로 묶을 주어가 없다
+  // ("Then tell him to keep his eyes closed…", "You have to challenge…")
+  if (/\b(?:you|your)\b/i.test(text)) return false
+  if (/^\s*(?:Then|Now|First|Next|Instead|Also)?\s*(?:tell|make|put|take|keep|imagine|consider|think|try|look|note|ask|give|let)\b/i.test(text)) {
+    return false
+  }
+  // 쉼표가 둘 이상이면 삽입구·열거다. "The film director, as compared to the
+  // theater director, has as his material, the finished celluloid." 같은 것은
+  // 명사구 하나로 묶을 수가 없다.
+  if ((text.match(/,/g) ?? []).length >= 2) return false
+  // 주어가 이미 "the N of X" 면 묶을 것이 남아 있지 않다
+  if (/^\s*(?:The|A|An)\s+[A-Za-z-]+\s+of\b/i.test(text)) return false
+  if (text.length < 55 || text.length > 140) return false
+  if (text.trimEnd().endsWith("?")) return false
+  // 명사형이 있을 법한 흔한 동사여야 한다 — 그래야 "the …ity of …" 가 만들어진다
+  return firstVerbLike(text) !== null
+}
+
+/**
  * 문장에서 **다시 말할 구 하나**를 고른다.
  *
  * 단어 수로 좌우를 넓히면 "insights and intuitions **that**" 이나
@@ -338,10 +378,13 @@ export function minePassage(
     if (!gold) unfold++
   }
 
-  // ── 유형 2 fold : 문장을 이름으로 ──────────────────────────────
-  const foldable = readable.find(
-    (s) => s.text.length >= 80 && s.text.length <= 200 && !s.text.endsWith("?"),
-  )
+  // ── 유형 2 fold : 문장을 명사구로 묶기 ─────────────────────
+  // ⚠ 예전에는 "읽을 만한 문장 아무거나" 를 골랐다. 그러면 빈칸이 남은 조각,
+  //   복문, 이미 명사구가 주어인 문장이 섞여 **묶는 것이 불가능한 문항**이 나온다.
+  //   골드 쌍의 공통 모양은 단문이다:
+  //     "synthetic ingredients can be made in a precisely controlled fashion"
+  //     → "the controllability of the production process"
+  const foldable = readable.find((s) => isFoldable(s.text))
   if (foldable) {
     out.push({
       passageId, type: 2, direction: "fold",
