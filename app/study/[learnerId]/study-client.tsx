@@ -35,6 +35,32 @@ function AxisBars({ report }: { report: Report }) {
             {p.n === 0 ? "아직 안 해봄" : `${p.n}회`}
             {p.trend !== null && ` · ${p.trend > 0 ? "▲" : "▼"}${Math.abs(Math.round(p.trend))}`}
           </div>
+          {/* 도움 없이 낸 성적을 따로 보여 준다. 섞어 놓으면 실력이 부풀려지고,
+              학생은 자기가 혼자 무엇을 할 수 있는지 끝내 모른다. */}
+          {(() => {
+            const s = report.support?.find((x) => x.axis === p.axis)
+            if (!s || s.unaided.n + s.aided.n === 0) return null
+            return (
+              <div className="mt-2 border-t border-[var(--color-line)] pt-1 text-[11px] leading-relaxed">
+                <div className="flex justify-between">
+                  <span className="text-[var(--color-muted)]">도움 없이</span>
+                  <span className="font-semibold tabular-nums">
+                    {s.unaided.mean === null ? "–" : Math.round(s.unaided.mean)}
+                    <span className="ml-1 font-normal text-[var(--color-muted)]">({s.unaided.n})</span>
+                  </span>
+                </div>
+                {s.aided.n > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-[var(--color-muted)]">도움 받고</span>
+                    <span className="tabular-nums">
+                      {s.aided.mean === null ? "–" : Math.round(s.aided.mean)}
+                      <span className="ml-1 text-[var(--color-muted)]">({s.aided.n})</span>
+                    </span>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
         </div>
       ))}
     </div>
@@ -118,6 +144,18 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
       {report && (
         <div className="mt-4">
           <AxisBars report={report} />
+          {/* 지원 감소가 실제로 일어나는가. 표본이 짧으면 **아무 말도 하지 않는다** —
+              없는 추세를 지어내면 학생이 그것을 믿는다. */}
+          {report.supportTrend?.delta !== null && report.supportTrend !== undefined && (
+            <p className="mt-2 text-center text-[11px] text-[var(--color-muted)]">
+              최근 {report.supportTrend.days}일 · 도움 없이 푼 비율{" "}
+              <span className="font-semibold text-[var(--color-ink)]">
+                {Math.round((report.supportTrend.unaidedShare ?? 0) * 100)}%
+              </span>
+              {report.supportTrend.delta! > 0.05 && " · 혼자 하는 쪽으로 가고 있습니다"}
+              {report.supportTrend.delta! < -0.05 && " · 요즘 도움을 더 쓰고 있습니다"}
+            </p>
+          )}
         </div>
       )}
 
