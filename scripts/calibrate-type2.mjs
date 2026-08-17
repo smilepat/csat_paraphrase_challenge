@@ -18,7 +18,28 @@ import { checkStructure } from "../lib/scoring/typed/structure.ts"
 loadEnv()
 
 // 자극은 실제 채굴 결과에서 가져왔다. 답안은 각 갈래를 겨냥해 손으로 썼다.
+//
+// ⚠ 이 세트에는 오랫동안 **짧은 `the X of Y` 명사구만** 있었다. 그래서 학생이
+//   실제로 쓰는 긴 명사구(후치 분사·that절 보문)에서 구조 검사가 무너지는 것을
+//   여기서는 볼 수가 없었고, 85.7~92.9% 라는 숫자가 그 결함을 가렸다.
+//   자가진단에서 앱 자신의 예시 답 124건 중 21건이 이 자리에서 떨어지는 것을
+//   보고서야 드러났다. 아래 long-* 가 그 형태다 — 빼지 말 것.
 const CASES = [
+  // ── 학생이 실제로 쓰는 긴 명사구 (구조 검사 회귀 감시용) ──
+  // 이 셋은 **구조**를 보려고 넣은 것이다. 그래서 의미 쪽은 논쟁이 없도록
+  // 자극과 답안을 짝 맞춰 썼다 — 처음에 실제 문항에서 그대로 떠 왔더니
+  // "a kind of" 나 화자 귀속이 빠져 판정기가 narrower/broader 라 했고,
+  // 그쪽이 옳았다. **정답 라벨이 논쟁적인 항목은 지표를 오염시킨다.**
+  { id: "long1", target: "noun_phrase",
+    stimulus: "negative emotions provide a testimonial",
+    answer: "the testimonial provided by negative emotions", expect: "same" },
+  { id: "long2", target: "noun_phrase",
+    stimulus: "outcomes are assessed based on personal control",
+    answer: "the assessment of outcomes based on personal control", expect: "same" },
+  { id: "long3", target: "noun_phrase",
+    stimulus: "someone claimed that conflict results from animosity",
+    answer: "the claim that conflict results from animosity", expect: "same" },
+
   // ── same ──
   { id: "s1", target: "clause", stimulus: "the controllability of the production process",
     answer: "the production process can be controlled", expect: "same" },
