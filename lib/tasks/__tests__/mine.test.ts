@@ -1,3 +1,4 @@
+import { firstVerbLike } from "../../scoring/typed/structure"
 import { describe, expect, it } from "vitest"
 import { hasHangul, sentences, splitSummaryBlock, usableSentence } from "../segment"
 import { isFoldable, minePassage } from "../mine"
@@ -183,6 +184,55 @@ describe("minePassage", () => {
     for (const d of drafts.filter((x) => x.type === 2)) {
       expect(["noun_phrase", "clause"]).toContain(d.targetForm)
       expect(["fold", "unfold"]).toContain(d.direction)
+    }
+  })
+})
+
+// ⚠ 고1 학생으로 써 보다가 만났다(§43). 화면에 이런 것이 나갔다:
+//      (1) “doing multiple” 를 같은 뜻의 다른 말로
+//    "doing multiple things" 에서 머리 명사가 잘린 **조각**이다. 문법적으로
+//    성립하지 않는 것을 다시 쓰라고 시킨 것이고, 승인분의 33%가 뒤에 내용어를
+//    달고 있었다. 원인: 드문 낱말을 머리로 잡고 **왼쪽으로만** 확장했는데,
+//    그 낱말이 형용사·부사면(multiple, baroque, hedonic) 머리 명사가 오른쪽에 남는다.
+describe("유형1 자극은 구여야 한다 — 조각이면 안 된다", () => {
+  const FREQ2: Record<string, number> = { the: 1, of: 5, at: 9, a: 2, and: 3, in: 4, things: 200 }
+
+  function type1Of(text: string): string[] {
+    return minePassage("F", text, FREQ2)
+      .filter((d) => d.type === 1)
+      .map((d) => d.stimulusText.replace(/\s+/g, " "))
+  }
+
+  it("형용사를 머리로 잡으면 오른쪽의 명사까지 끌어온다", () => {
+    const body =
+      "The concept of humans doing multiple things at a time has been studied for decades. " +
+      "Researchers kept careful records of every session they ran in the laboratory."
+    for (const s of type1Of(body)) {
+      expect(s, "머리 명사가 잘린 조각이다").not.toMatch(/\bmultiple$/)
+    }
+  })
+
+  it("자극 바로 뒤에 내용어가 남아 있으면 뽑지 않는다", () => {
+    const body =
+      "Musicians tuned their instruments away from the noisy crowd before the concert began. " +
+      "The audience waited patiently in the hall for the performance to start."
+    for (const s of type1Of(body)) {
+      const at = body.indexOf(s)
+      const after = body.slice(at + s.length).match(/^\s+([A-Za-z][A-Za-z'-]*)/)
+      if (!after) continue
+      const next = after[1]!.toLowerCase()
+      const isStop = /^(and|or|but|that|which|who|to|of|in|on|at|for|with|by|from|as|than|is|are|was|were|the|a|an|this|these|those|its|their|his|her|our|your|my|it|they|he|she|we|before|after|when|while|because|so|then)$/.test(next)
+      expect(isStop || Boolean(firstVerbLike(next)), `«${s}» 뒤에 «${next}» 가 남았다`).toBe(true)
+    }
+  })
+
+  it("부사·비교급으로 끝나는 조각을 버린다", () => {
+    const body =
+      "Some people remember events better than others when they are calm and rested. " +
+      "The brain stores such memories in a network that grows over many quiet nights."
+    for (const s of type1Of(body)) {
+      expect(s, "부사·비교급으로 끝났다").not.toMatch(/\b(better|worse|more|less|one)$/)
+      expect(s).not.toMatch(/ly$/)
     }
   })
 })

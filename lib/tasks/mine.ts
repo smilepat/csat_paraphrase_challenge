@@ -261,6 +261,22 @@ function isModifier(w: string): boolean {
   return false
 }
 
+/** 이 낱말이 뒤따르면 명사구가 거기서 끝난 것이다. 더 끌어오면 절을 삼킨다. */
+const PHRASE_STOP = new Set(`
+and or but that which who whom whose where when while because although though if
+to of in on at for with by from as than into onto upon within about over under
+is are was were be been being am has have had do does did
+can could may might will would shall should must not
+a an the this these those its their his her our your my it they he she we you i
+there here so then thus however moreover therefore
+`.trim().split(/\s+/))
+
+/** 구의 끝에 오면 머리가 명사가 아니라는 뜻인 낱말들. */
+const BAD_TAIL = new Set(`
+one ones other others more most less least better worse best worst
+own same such very quite rather too also just even still ever never
+`.trim().split(/\s+/))
+
 function pickPhrase(
   sentence: string,
   rareFirst: string[],
@@ -268,6 +284,10 @@ function pickPhrase(
   for (const w of rareFirst) {
     // 동사를 머리로 삼으면 "the brain replays" 같은 절 조각이 된다. 명사만 머리로 쓴다.
     if (firstVerbLike(w)) continue
+    // firstVerbLike 는 고정 목록이라 "tuned" 처럼 목록 밖 동사를 놓친다("Musicians tuned").
+    // -ed 형은 명사 머리인 경우가 드무니 아예 앵커로 쓰지 않는다. 후보는 여럿이라
+    // 이 자리를 버려도 대개 같은 구를 다른 낱말에서 다시 잡는다.
+    if (/ed$/i.test(w)) continue
     const esc = w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
     const m = sentence.match(new RegExp(`\\b${esc}[a-z-]*\\b`, "i"))
     if (!m || m.index === undefined) continue
@@ -282,9 +302,37 @@ function pickPhrase(
       left = left - before[1]!.length - (before[2]?.length ?? 0)
     }
 
-    const text = sentence.slice(left, m.index + m[0].length).trim()
+    // ⚠ 오른쪽으로도 끌어와야 한다. 드문 낱말을 머리로 삼는데 그 낱말이 형용사·부사면
+    //   (`multiple`, `baroque`, `hedonic`, `socially`) **머리 명사가 잘려 나간다.**
+    //   실제로 학생 화면에 `doing multiple`(+things), `giving Apocalypse`(+Now),
+    //   `chronologically eighty`(+years) 가 나갔다 — 문법적으로 성립하지 않는 조각을
+    //   "다른 말로 바꾸라" 고 시킨 것이다(승인분의 33%가 뒤에 내용어를 달고 있었다).
+    let right = m.index + m[0].length
+    for (let k = 0; k < 3; k++) {
+      const after = sentence.slice(right).match(/^(\s+)([A-Za-z][A-Za-z-]*)/)
+      if (!after) break
+      // 기능어나 동사가 오면 구는 여기서 끝난 것이다
+      const next = after[2]!
+      if (PHRASE_STOP.has(next.toLowerCase()) || firstVerbLike(next)) break
+      right += after[0].length
+      if (sentence.slice(left, right).trim().split(/\s+/).length >= 6) break
+    }
+
+    const text = sentence.slice(left, right).trim()
     const words = text.split(/\s+/).length
     if (words < 2 || words > 6 || hasHangul(text)) continue
+
+    // 오른쪽으로 끌어와도 조각이 남는 경우가 있다. 두 가지로 걸러낸다.
+    //   ① 끝이 부사·비교급이면 머리가 명사가 아니다 — "events better", "characteristics simultaneously"
+    //   ② 뒤에 아직 내용어가 붙어 있으면 머리 명사를 못 만난 것이다 —
+    //      "tasks alternately sharing one" + resource
+    // 후보는 여럿이므로 이 자리를 버리고 다음 낱말로 넘어가는 편이 싸다.
+    const tail = text.split(/\s+/).pop()!.toLowerCase()
+    if (/ly$/.test(tail) || BAD_TAIL.has(tail)) continue
+    const nextAfter = sentence.slice(right).match(/^\s+([A-Za-z][A-Za-z'-]*)/)
+    if (nextAfter && !PHRASE_STOP.has(nextAfter[1]!.toLowerCase()) && !firstVerbLike(nextAfter[1]!)) {
+      continue
+    }
     const offset = sentence.indexOf(text, Math.max(0, left - 2))
     if (offset < 0) continue
     return { start: offset, end: offset + text.length, text }

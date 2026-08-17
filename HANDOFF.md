@@ -2078,3 +2078,70 @@ const submitted = answerToSubmit(view.type, scaffold, slots, composed)     // �
 
 실제로 0점을 받은 그 답안(`ethical rules`)을 픽스처로 박았다. `checkAvoidance` 까지
 연결해 **재사용이 0건**임을 본다. 예전처럼 문장 전체를 보내는 변이로 죽는다.
+
+---
+
+## 43. 유형 1 자극의 27% 가 구가 아니라 조각이었다
+
+§42 를 고치고 학생 세션을 이어 하다가 화면에서 봤다.
+
+```
+(1) “doing multiple” 를 같은 뜻의 다른 말로 (원문 2단어)
+    ← "humans doing multiple things at a time"
+```
+
+`things` 가 잘려 나갔다. **문법적으로 성립하지 않는 것을 다시 쓰라고** 시킨 것이다.
+재 보니 승인분 129건 중 **35건(27%)** 이 그랬다.
+
+```
+«doing multiple»          + things
+«giving Apocalypse»       + Now
+«chronologically eighty»  + years
+«hearing baroque»         + music
+«tuned their instruments» + away
+```
+
+### 원인
+
+`pickPhrase` 가 드문 낱말을 머리로 잡고 **왼쪽으로만** 확장했다. 그 낱말이
+형용사·부사면(`multiple`, `baroque`, `hedonic`, `socially`) 머리 명사가 오른쪽에 남는다.
+
+`firstVerbLike` 로 동사를 걸렀지만 그건 **고정 목록**이라 `tuned` 같은 목록 밖
+동사를 놓친다 — 그래서 `Musicians tuned` 같은 절 조각도 나왔다.
+
+### 고친 것
+
+| | |
+|---|---|
+| 오른쪽 확장 | 기능어·동사를 만날 때까지 끌어온다 → `doing multiple things` |
+| 꼬리 검사 | 부사(`-ly`)·비교급(`better`)·`one` 으로 끝나면 버린다 |
+| 뒤 내용어 검사 | 확장 후에도 내용어가 붙어 있으면 그 자리를 버린다 |
+| `-ed` 앵커 금지 | 목록 밖 동사를 머리로 삼는 것을 막는다(`Musicians tuned`) |
+
+후보는 여럿이라 한 자리를 버려도 대개 같은 구를 다른 낱말에서 다시 잡는다.
+
+### 소급 적용
+
+```bash
+npm run tasks:recheck1 -- --apply   # 조각을 반려
+npm run tasks:mine                  # 재채굴 (반려 자리가 다시 열린다)
+npm run tasks:audit1 -- --apply     # 새 후보 승인
+npm run tasks:hints                 # 새 문항의 힌트
+```
+
+프로덕션: 유형1 승인 **129 → 181건**, 조각 **0건**. 힌트 373/373.
+
+반려가 늘어난 것이 아니라 **더 좋은 구로 다시 뽑혔다** — 조각을 버리자 같은
+문장에서 온전한 구가 잡혔기 때문이다.
+
+### 교훈
+
+이번 세션에서 학생으로 앉아 본 시간은 스무 문항이 채 안 된다. 그 사이에
+§41(판정이 문맥을 못 봄) · §42(문장 전체를 채점기로 보냄) · §43(자극이 조각)
+세 가지가 나왔다. 셋 다 **단위·e2e·캘리브레이션 어느 것도 못 잡던** 것이다.
+
+공통점이 있다. 세 검사는 전부 **부품**을 본다 — 채점기를 직접 부르고, 버튼이
+눌리는지 보고, 함수에 문자열을 넣는다. 학생이 실제로 만나는 것은 **부품이 아니라
+화면 하나**이고, 결함은 부품 사이의 이음매에 있었다.
+
+**만든 사람이 학생 자리에 앉아 보는 것을 대체할 검사는 없다.**

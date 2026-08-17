@@ -31,6 +31,7 @@
     "tasks:sync": "vite-node scripts/sync-approvals.mjs",
     "tasks:gold": "vite-node scripts/seed-gold-pairs.mjs",
     "tasks:audit1": "vite-node scripts/audit-type1.mjs",
+    "tasks:recheck1": "vite-node scripts/recheck-type1.mjs",
     "tasks:legacy1": "vite-node scripts/annotate-legacy-type1.mjs",
     "tasks:review3": "vite-node scripts/review-type3.mjs",
     "tasks:recheck-fold": "vite-node scripts/recheck-fold.mjs",
