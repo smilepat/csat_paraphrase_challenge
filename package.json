@@ -34,7 +34,8 @@
     "tasks:legacy1": "vite-node scripts/annotate-legacy-type1.mjs",
     "tasks:review3": "vite-node scripts/review-type3.mjs",
     "tasks:recheck-fold": "vite-node scripts/recheck-fold.mjs",
-    "tasks:audit3": "vite-node scripts/audit-type3-llm.mjs"
+    "tasks:audit3": "vite-node scripts/audit-type3-llm.mjs",
+    "tasks:recheck3": "vite-node scripts/recheck-type3.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
