@@ -146,6 +146,29 @@ export function scaffoldFor(
   return null
 }
 
+/**
+ * **채점기에 보낼 답안**을 고른다. 틀에 채운 것을 무조건 합쳐 보내면 안 된다.
+ *
+ * 두 유형의 틀은 성격이 다르다.
+ *   유형 2  `the {0} of {1}` — 합친 것이 **곧 답**이다(명사구 하나).
+ *   유형 1  문장 안에 빈칸 하나 — 합치면 **문장 전체**가 되는데, 학생이 쓴 것은
+ *           그 빈칸뿐이다.
+ *
+ * ⚠ 이 구별이 없어서 실제로 이런 일이 있었다(§42). 학생이 `moral principles` 를
+ *   `ethical rules` 로 바꿨는데 **0점**이 나왔다 — 합쳐진 문장의 **나머지 부분**에
+ *   남아 있던 `principles`·`moral` 을 회피 검사가 "안 바꿨다" 로 셌기 때문이다.
+ *   같은 화면이 모범답안으로 `ethical standards` 를 보여 주고 있었다.
+ */
+export function answerToSubmit(
+  type: number,
+  scaffold: Scaffold,
+  slots: string[],
+  composed: string,
+): string {
+  if (type === 1 && scaffold) return (slots[0] ?? "").trim()
+  return composed
+}
+
 /** 학생이 채운 값을 틀에 끼워 최종 답안을 만든다. */
 export function fillScaffold(frame: string, values: string[]): string {
   return frame
