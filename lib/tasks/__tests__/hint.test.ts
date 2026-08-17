@@ -103,6 +103,39 @@ describe("힌트 사다리", () => {
     expect(s[2]!.body).not.toContain("skilled experts")
   })
 
+  // ⚠ 자가진단에서 나왔다. 2칸(전략)은 firstVerbLike 가, 3칸(어형)은 LLM 이
+  //    **각자 따로** 낱말을 골라서 45% 가 서로 다른 것을 가리켰다 —
+  //    2칸 "핵심 동사는 fall", 3칸 "change → alteration".
+  //    막혀서 도움을 청한 학생에게 모순된 지시를 주고 있었다.
+  it("2칸과 3칸은 같은 낱말을 가리킨다", () => {
+    // 문장의 첫 동사(fall)와 재료의 동사(change)가 다른, 실제로 어긋났던 사례
+    const s = hintSteps(
+      2, "fold",
+      "Surprises can fall from the sky like volcanic ash and appear to change everything.",
+      [],
+      { gloss: "모든 것을 바꾸는 것처럼 보이는 것", form: "change → alteration", example: "the apparent alteration of everything" },
+    )
+    const strategy = s.find((x) => x.label === "어떻게 시작하나요")!.body
+    expect(strategy).toContain("change")
+    expect(strategy, "문장에서 먼저 보이는 동사를 짚으면 3칸과 어긋난다").not.toContain("fall")
+  })
+
+  it("펴기도 같은 정본을 쓴다", () => {
+    const s = hintSteps(2, "unfold", "the centrality of this mode of thinking", [], {
+      gloss: "이 사고방식이 얼마나 중요한지",
+      form: "centrality → central",
+      example: "this way of thought is central",
+    })
+    expect(s.find((x) => x.label === "어떻게 시작하나요")!.body).toContain("centrality")
+  })
+
+  it("재료가 없으면 예전처럼 문장에서 찾는다 — 침묵하지 않는다", () => {
+    const s = hintSteps(2, "fold", "natural ingredients often vary in their composition", [], {
+      gloss: "성분이 크게 달라진다",
+    })
+    expect(s.find((x) => x.label === "어떻게 시작하나요")!.body).toContain("vary")
+  })
+
   it("유형 3 은 산출이 없으므로 예시 칸도 없다", () => {
     const s = hintSteps(3, "span", "These variations", [], { gloss: "앞의 여러 차이" })
     expect(s.map((x) => x.label)).toEqual(["무슨 뜻인가요", "어떻게 시작하나요"])
