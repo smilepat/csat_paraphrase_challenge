@@ -286,8 +286,20 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
                 <p className="mt-2 text-sm">{result.message}</p>
                 {result.suggested && (
                   <p className="mt-2 font-serif text-sm text-[var(--color-muted)]">
-                    예시: {result.suggested}
+                    이 답을 고친다면: {result.suggested}
                   </p>
+                )}
+                {/* 모범답안은 **점수와 상관없이** 나온다. 예전에는 판정이 있을 때만
+                    한 줄이 나왔는데, 무료 단계에서 떨어진 답안에는 판정을 안 부르므로
+                    가장 도움이 필요한 학생이 아무것도 못 받았다. */}
+                {result.model && (
+                  <div className="mt-3 rounded-lg bg-white p-2">
+                    <p className="text-[11px] font-bold text-[var(--color-brand)]">모범답안</p>
+                    <p className="mt-1 font-serif text-sm">{result.model}</p>
+                    <p className="mt-1 text-[11px] text-[var(--color-muted)]">
+                      정답은 하나가 아닙니다. 이 답과 내 답이 어디서 갈렸는지 견줘 보세요.
+                    </p>
+                  </div>
                 )}
                 {result.gold && (
                   <div className="mt-3 rounded-lg bg-white p-2">

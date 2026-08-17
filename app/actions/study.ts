@@ -166,6 +166,15 @@ export type SubmitResult = {
   judged: boolean
   /** 사람이 정해 둔 정답 쌍. 있으면 채점 뒤에 보여 준다 */
   gold: string | null
+  /**
+   * 모범답안 — **채점 결과와 상관없이** 보여 준다.
+   *
+   * 예전에는 LLM 판정이 있을 때만 `suggested` 한 줄이 나왔다. 그런데 무료 단계에서
+   * 떨어진 답안(원문을 아직 안 바꾼 경우)에는 판정을 부르지 않으므로 **가장 도움이
+   * 필요한 학생이 아무것도 못 받았다.** 자습이라 물어볼 사람도 없다.
+   * 문항마다 미리 만들어 둔 example 을 쓴다(pc_tasks.hints).
+   */
+  model: string | null
 }
 
 export async function submitAnswer(
@@ -185,7 +194,10 @@ export async function submitAnswer(
   const t = rows[0] as unknown as TaskRow & { body: string }
   const stimulus = t.body.slice(t.stimulus_start, t.stimulus_end)
 
-  let result: SubmitResult
+  // 모범답안은 유형별 채점이 끝난 뒤 마지막에 한 번만 붙인다 — 세 갈래가 각자
+  // 붙이면 한 곳을 빠뜨려도 안 드러난다.
+  let result: Omit<SubmitResult, "model">
+
 
   if (t.type === 1) {
     const free = checkAvoidance({
@@ -242,7 +254,21 @@ export async function submitAnswer(
     }
   }
 
-  return { ...result, gold }
+  // 모범답안. 점수와 상관없이 붙인다 — 무료 단계에서 떨어진 학생은 판정을 안 부르므로
+  // 예전에는 **가장 도움이 필요한 쪽이 아무것도 못 받았다.**
+  // 유형 3 은 산출 과제가 아니라 범위를 끄는 과제라 모범답안이 없다.
+  let model: string | null = null
+  if (t.type !== 3) {
+    try {
+      const h = (t as unknown as { hints?: string | null }).hints
+      const parsed = h ? (JSON.parse(String(h)) as { example?: string }) : null
+      model = parsed?.example?.trim() || null
+    } catch {
+      model = null
+    }
+  }
+
+  return { ...result, gold, model }
 }
 
 // ── 리포트 ──────────────────────────────────────────────────

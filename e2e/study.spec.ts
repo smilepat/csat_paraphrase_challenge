@@ -103,6 +103,34 @@ test("제출하면 점수와 피드백이 나오고 다음 문항으로 넘어�
   await expect(page.getByText(/누적 1회/)).toBeVisible()
 })
 
+test("채점 뒤에는 점수와 상관없이 모범답안을 준다", async ({ page }) => {
+  await enter(page)
+  // ⚠ 문항은 비동기로 온다. 기다리지 않고 읽으면 빈 화면을 보고 엉뚱하게 갈라진다.
+  await expect(page.getByRole("button", { name: "제출" })).toBeVisible({ timeout: 20_000 })
+
+  // 일부러 **원문을 그대로** 낸다. 무료 단계에서 떨어져 유료 판정을 부르지 않는,
+  // 예전이라면 아무 예시도 못 받던 경우다 — 가장 도움이 필요한 자리다.
+  const prompt = (await page.locator("main").innerText()).replace(/\s+/g, " ")
+  test.skip(prompt.includes("범위를 끌어서"), "유형 3 은 산출 과제가 아니라 모범답안이 없다")
+
+  // 학생의 기본 경로 그대로 간다 — 유형 1 은 자유 입력이 아니라 **빈칸 틀**이다.
+  const slots = page.locator('main input[type="text"], main input:not([type])')
+  const box = page.locator("main textarea")
+  if (await slots.count()) {
+    const n = await slots.count()
+    for (let i = 0; i < n; i++) await slots.nth(i).fill("copied straight from the passage")
+  } else {
+    await expect(box).toBeVisible()
+    await box.fill("the same words copied straight from the passage")
+  }
+  await page.getByRole("button", { name: "제출" }).click()
+
+  await expect(page.getByText("모범답안")).toBeVisible({ timeout: 20_000 })
+  // 모범답안 옆에는 **정답이 하나가 아니라는 말**이 함께 있어야 한다.
+  // 이것이 없으면 학생은 자기 답이 틀렸다고 읽는다.
+  await expect(page.getByText(/정답은 하나가 아닙니다/)).toBeVisible()
+})
+
 test("빈 답으로는 제출할 수 없다", async ({ page }) => {
   await enter(page)
   // 유형에 상관없이, 아직 아무것도 하지 않았으면 제출은 막혀 있다
