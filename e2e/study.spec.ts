@@ -131,6 +131,33 @@ test("채점 뒤에는 점수와 상관없이 모범답안을 준다", async ({ 
   await expect(page.getByText(/정답은 하나가 아닙니다/)).toBeVisible()
 })
 
+test("도움 없이 낸 성적을 따로 보여 준다", async ({ page }) => {
+  await enter(page)
+  await expect(page.getByRole("button", { name: "제출" })).toBeVisible({ timeout: 20_000 })
+
+  // 아직 아무것도 안 냈으면 갈라 보여 줄 것이 없다
+  await expect(page.getByText("도움 없이")).toHaveCount(0)
+
+  // ① 도움을 받지 않고 한 번 낸다
+  await answerCurrent(page)
+  await page.getByRole("button", { name: "다음 문항" }).click()
+  await expect(page.getByText(/누적 1회/)).toBeVisible()
+
+  // 무도움 시도가 생겼으니 그 칸이 나와야 한다
+  await expect(page.getByText("도움 없이").first()).toBeVisible()
+  await expect(page.getByText("도움 받고")).toHaveCount(0)
+
+  // ② 이번에는 도움을 열고 낸다
+  await expect(page.getByRole("button", { name: "제출" })).toBeVisible({ timeout: 20_000 })
+  await page.getByRole("button", { name: /막혔어요/ }).click()
+  await expect(page.getByText(/도움 1\//)).toBeVisible()
+  await answerCurrent(page)
+  await page.getByRole("button", { name: "다음 문항" }).click()
+
+  // 두 성적이 **갈려서** 보여야 한다. 섞으면 실력이 부풀려진다.
+  await expect(page.getByText("도움 받고").first()).toBeVisible()
+})
+
 test("빈 답으로는 제출할 수 없다", async ({ page }) => {
   await enter(page)
   // 유형에 상관없이, 아직 아무것도 하지 않았으면 제출은 막혀 있다

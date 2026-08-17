@@ -18,6 +18,11 @@ export type AttemptRow = {
   /** YYYY-MM-DD */
   day: string
   errorName: string | null
+  /**
+   * 학생이 연 힌트 칸 수. 0 이면 도움 없이 낸 것이다.
+   * 없을 수도 있다(옛 기록·이 값이 필요 없는 호출부) — 그때는 0 으로 본다.
+   */
+  hintLevel?: number
 }
 
 export type AxisPoint = { day: string; mean: number | null; n: number }
