@@ -18,6 +18,7 @@
 // ============================================================
 import { createClient } from "@libsql/client"
 import { loadEnv, callGemini, parseGeminiJson, logUsage } from "./_shared.mjs"
+import { formAgreesWithExample } from "../lib/tasks/hint-material.ts"
 
 loadEnv()
 const args = process.argv.slice(2)
@@ -42,12 +43,34 @@ const { rows } = await db.execute({
         ORDER BY t.id`,
   args: [],
 })
-const targets = rows
-  .filter((r) => redo || !r.hints)
-  .slice(0, limit === Infinity ? undefined : limit)
+/**
+ * --repair : 이미 만들어 둔 힌트 중 **어형과 예시가 어긋난 것**만 다시 만든다.
+ * 전체를 --redo 하면 멀쩡한 것까지 흔들리고 돈도 그만큼 든다.
+ */
+function needsRepair(row) {
+  if (!row.hints) return false
+  let h
+  try {
+    h = JSON.parse(String(row.hints))
+  } catch {
+    return true
+  }
+  if (!h.gloss) return true
+  if (h.form && !formAgreesWithExample(h.form, h.example)) return true
+  return false
+}
+
+const repair = args.includes("--repair")
+const candidates = rows.filter((r) => (repair ? needsRepair(r) : redo || !r.hints))
+const targets = candidates.slice(0, limit === Infinity ? undefined : limit)
 
 console.log(`[hints] target=${url}`)
-console.log(`  승인 문항 ${rows.length}건 · 힌트 없는 것 ${rows.filter((r) => !r.hints).length}건 · 이번 ${targets.length}건${dry ? " (dry-run)" : ""}\n`)
+console.log(
+  `  승인 문항 ${rows.length}건 · 힌트 없는 것 ${rows.filter((r) => !r.hints).length}건 · ` +
+    `수리 대상 ${rows.filter(needsRepair).length}건 · 이번 ${targets.length}건${dry ? " (dry-run)" : ""}\n`,
+)
+// ⚠ --dry 도 LLM 을 부른다(생성한 뒤에 저장만 건너뛴다). 개수만 볼 때는 --count 를 쓴다.
+if (args.includes("--count")) process.exit(0)
 if (!targets.length) process.exit(0)
 
 const SYSTEM = `You prepare hints for Korean high-school students practising English paraphrase.
@@ -90,6 +113,14 @@ For EACH item return:
   FOLD: the sentence's main verb or adjective and its noun form ("vary → variability").
   UNFOLD: the noun-phrase head and its verb/adjective form ("variability → vary").
   For other types return "".
+  TWO HARD RULES:
+  · The base (left side) must be a word that actually appears in the TARGET, so the
+    student can find it. Do not name a word the passage does not use.
+  · The derived form (right side) must be a REAL English word AND must appear in your
+    "example" above. If your example does not use it, change one of the two so they
+    agree. A student who is told "use X" and then shown an answer without X is worse
+    off than one given no hint at all.
+  If you cannot satisfy both, return "" for form.
 
 Return ONLY a JSON array:
 [{"id":"...","gloss":"...","example":"...","form":"..."}]`
@@ -113,6 +144,7 @@ function shapeOf(example) {
 }
 
 const built = []
+const dropped = { form: 0 }
 let failed = 0
 for (let i = 0; i < targets.length; i += BATCH) {
   const batch = targets.slice(i, i + BATCH)
@@ -139,12 +171,19 @@ for (let i = 0; i < targets.length; i += BATCH) {
     if (!gloss) continue
     // 뜻에 영어가 섞이면 "무엇을 말할지" 가 아니라 답을 준 것이다
     if (/[A-Za-z]{3,}/.test(gloss)) continue
+
+    // 어형(3칸)과 예시(4칸)가 어긋나면 **어형을 버린다.** 세 칸이 서로 맞는 편이
+    // 네 칸이 모순되는 것보다 낫다. 이 검사가 지어낸 낱말도 같이 걸러낸다 —
+    // "unmoved → unmovedness" 는 예시에 그런 낱말이 없으니 여기서 떨어진다.
+    const keptForm = form && formAgreesWithExample(form, example) ? form : ""
+    if (form && !keptForm) dropped.form++
+
     built.push({
       id: String(r.id),
       hints: {
         gloss,
         ...(r.type === 1 && example ? { shape: shapeOf(example) } : {}),
-        ...(r.type === 2 && form ? { form } : {}),
+        ...(r.type === 2 && keptForm ? { form: keptForm } : {}),
         ...(r.type !== 3 && example ? { example } : {}),
       },
     })
@@ -153,7 +192,10 @@ for (let i = 0; i < targets.length; i += BATCH) {
 }
 console.log("")
 
-console.log(`\n만든 것 ${built.length}건 · 실패 ${failed}건 · 버린 것 ${targets.length - built.length - failed}건`)
+console.log(
+  `\n만든 것 ${built.length}건 · 실패 ${failed}건 · 버린 것 ${targets.length - built.length - failed}건` +
+    ` · 어형·예시가 어긋나 어형만 버린 것 ${dropped.form}건`,
+)
 
 console.log("\n── 표본 5건 ──")
 const step = Math.max(1, Math.floor(built.length / 5))

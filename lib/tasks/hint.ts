@@ -54,19 +54,55 @@ function headNoun(np: string): string | null {
   return words.length ? words[words.length - 1]!.replace(/[^A-Za-z-]/g, "") : null
 }
 
-/** 문장의 주어 자리(첫 명사구)를 거칠게 집는다. of 보문의 재료로 쓴다. */
+/**
+ * 문장의 주어 자리(첫 명사구)를 거칠게 집는다. of 보문의 재료로 쓴다.
+ *
+ * ⚠ 앞에서 세 낱말을 그냥 떼면 **동사까지 물고 온다** — "Surprises can fall" 을
+ *   주어라고 보여 주면, 정작 "동사를 명사로 바꾸라"는 같은 힌트 안에서 동사가
+ *   주어 자리에 앉아 있게 된다. 그래서 동사처럼 보이는 낱말 앞에서 끊는다.
+ */
 function roughSubject(sentence: string): string | null {
   const m = sentence.match(
     /^\s*(?:[A-Z][a-z]*ly,?\s+)?((?:the|a|an|this|these|those)\s+)?([A-Za-z][A-Za-z-]*(?:\s+[A-Za-z][A-Za-z-]*){0,2})/,
   )
-  return m ? `${m[1] ?? ""}${m[2]}`.trim() : null
+  if (!m) return null
+  const words = `${m[1] ?? ""}${m[2]}`.trim().split(/\s+/)
+  const cut = words.findIndex((w, i) => i > 0 && firstVerbLike(w) !== null)
+  const kept = cut > 0 ? words.slice(0, cut) : words
+  const subject = kept.join(" ").trim()
+  return subject.length >= 2 ? subject : null
 }
 
-/** 2칸 — 전략. 예전의 그 힌트다. 재료가 없어도 항상 만들 수 있다. */
-function strategyHint(type: number, direction: string | null, stimulus: string, avoidWords: string[]): string {
+/**
+ * "vary → variability" 에서 **왼쪽**(학생이 이미 문장에서 볼 수 있는 낱말)을 꺼낸다.
+ *
+ * 이것이 2칸의 정본이다. 예전에는 2칸이 `firstVerbLike` 로, 3칸이 LLM 이 준 `form`
+ * 으로 각자 낱말을 골랐고, **45% 가 서로 다른 낱말을 가리켰다** —
+ * 2칸 "핵심 동사는 fall", 3칸 "change → alteration". 막혀서 도움을 청한 학생에게
+ * 모순된 지시를 준 것이다. 두 칸이 한 낱말에서 나오게 하면 어긋날 수가 없다.
+ */
+function formBase(form: string | undefined): string | null {
+  if (!form) return null
+  const left = form.split(/[→>]/)[0]?.trim()
+  if (!left) return null
+  // "size, complexity → large, complex" 처럼 둘일 수 있다. 첫 낱말만 짚어 준다.
+  const first = left.split(/[,;]/)[0]!.trim()
+  return first.length >= 2 ? first : null
+}
+
+/** 2칸 — 전략. 재료가 있으면 그 낱말을 쓰고, 없으면 예전처럼 문장에서 찾는다. */
+function strategyHint(
+  type: number,
+  direction: string | null,
+  stimulus: string,
+  avoidWords: string[],
+  material: HintMaterial,
+): string {
   if (type === 2 && direction === "fold") {
-    // 정형 판별은 "often vary" 같은 것을 놓친다. 힌트에서는 느슨한 쪽을 먼저 쓴다.
-    const cue = firstVerbLike(stimulus) ?? findFiniteVerb(stimulus).cue
+    // 재료의 낱말이 우선이다. LLM 은 문장 전체를 보고 **명사형이 있는** 동사를 고르는데,
+    // firstVerbLike 는 앞에서부터 훑기만 해서 명사(`amount`)를 동사로 집기도 한다.
+    // 정형 판별은 "often vary" 같은 것을 놓치므로 마지막 폴백으로만 둔다.
+    const cue = formBase(material.form) ?? firstVerbLike(stimulus) ?? findFiniteVerb(stimulus).cue
     const subject = roughSubject(stimulus)
     if (!cue) return "문장의 동사를 찾아 명사로 바꾸는 데서 시작해 보세요."
     return (
@@ -76,7 +112,8 @@ function strategyHint(type: number, direction: string | null, stimulus: string, 
     )
   }
   if (type === 2 && direction === "unfold") {
-    const head = headNoun(stimulus)
+    // 펴기도 같은 정본을 쓴다. "centrality → central" 의 왼쪽이 머리 낱말이다.
+    const head = formBase(material.form) ?? headNoun(stimulus)
     if (!head) return "이 명사구를 누가·무엇이 어떻게 하는지로 풀어 보세요."
     return (
       `머리 단어는 “${head}” 입니다. 이 단어를 **동사나 형용사로 풀고**, ` +
@@ -119,7 +156,7 @@ export function hintSteps(
     })
   }
 
-  const strategy = strategyHint(type, direction, stimulus, avoidWords)
+  const strategy = strategyHint(type, direction, stimulus, avoidWords, m)
   if (strategy) steps.push({ level: 0, label: "어떻게 시작하나요", body: strategy })
 
   if (type === 1 && m.shape) {
