@@ -1,4 +1,5 @@
-import { scaffoldFor } from "../scaffold"
+import { answerToSubmit, fillScaffold, scaffoldFor } from "../scaffold"
+import { checkAvoidance } from "../../scoring/typed/type1"
 import { describe, expect, it } from "vitest"
 import { goldSpanInContext, promptFor, toTaskView, type TaskRow } from "../render"
 
@@ -102,5 +103,47 @@ describe("유형 2 묶기 틀 — 주어 예시에 조동사가 딸려오면 안
   it("멀쩡한 주어는 그대로 둔다", () => {
     const s = scaffoldFor(2, "fold", "natural ingredients often vary in their composition", [])!
     expect(s.slots[1]!.hint).toContain("natural ingredients")
+  })
+})
+
+// ⚠ 고1 학생으로 써 보다가 만난 가장 비싼 결함(§42).
+//    `moral principles` 를 `ethical rules` 로 바꿨는데 **0점**이 나왔다:
+//      "principles, moral 은(는) 아직 원문 그대로입니다"
+//    내 답에는 그 낱말이 하나도 없었다. 빈칸 틀이 **문장 전체**를 조립해 보냈고,
+//    문장 나머지에 남아 있던 원문 단어를 회피 검사가 셌기 때문이다.
+//    같은 화면이 모범답안으로 `ethical standards` 를 보여 주고 있었다.
+describe("채점기에 보낼 답안 고르기", () => {
+  const CTX =
+    "most people pause to reflect on their own {0} and on the practical implications of those principles"
+
+  it("유형 1 은 문장이 아니라 **빈칸에 쓴 구**를 보낸다", () => {
+    const sc = { frame: CTX, slots: [{ hint: "" }] }
+    const composed = fillScaffold(sc.frame, ["ethical rules"])
+    expect(composed, "화면에는 문장 전체가 보인다").toContain("practical implications")
+    expect(answerToSubmit(1, sc, ["ethical rules"], composed)).toBe("ethical rules")
+  })
+
+  it("그래서 문장 나머지의 원문 단어가 회피 검사에 안 걸린다", () => {
+    const sc = { frame: CTX, slots: [{ hint: "" }] }
+    const sent = answerToSubmit(1, sc, ["ethical rules"], fillScaffold(sc.frame, ["ethical rules"]))
+    const free = checkAvoidance({
+      answer: sent,
+      stimulus: "moral principles",
+      avoidWords: ["principles", "moral"],
+    })
+    expect(free.reused, "보낸 답에 없는 낱말이 재사용으로 잡혔다").toEqual([])
+    expect(free.fail).toBe(false)
+  })
+
+  it("유형 2 는 합친 것이 곧 답이다 — 그대로 보낸다", () => {
+    const sc = { frame: "the {0} of {1}", slots: [{ hint: "" }, { hint: "" }] }
+    const composed = fillScaffold(sc.frame, ["variability", "natural ingredients"])
+    expect(answerToSubmit(2, sc, ["variability", "natural ingredients"], composed)).toBe(
+      "the variability of natural ingredients",
+    )
+  })
+
+  it("틀 없이 직접 쓰면 쓴 그대로 보낸다", () => {
+    expect(answerToSubmit(1, null, [], "my own wording")).toBe("my own wording")
   })
 })

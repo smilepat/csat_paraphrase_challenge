@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { nextTask, studyReport, submitAnswer, taskHint, type NextTask, type SubmitResult } from "@/app/actions/study"
 import type { HintStep } from "@/lib/tasks/hint"
 import { TaskContext } from "@/components/task-context"
-import { fillScaffold } from "@/lib/tasks/scaffold"
+import { answerToSubmit, fillScaffold } from "@/lib/tasks/scaffold"
 
 type Report = Awaited<ReturnType<typeof studyReport>>
 
@@ -112,7 +112,7 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
     setBusy(true)
     setError(null)
     try {
-      const r = await submitAnswer(learnerId, item.task.id, composed, span ?? undefined, shown)
+      const r = await submitAnswer(learnerId, item.task.id, submitted, span ?? undefined, shown)
       setResult(r)
       setReport(await studyReport(learnerId))
     } catch (e) {
@@ -126,8 +126,11 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
   const isSpanTask = view?.type === 3
   const scaffold = !freeWrite && !isSpanTask ? (view?.scaffold ?? null) : null
 
-  // 틀을 쓰면 칸을 합쳐 답안을 만든다. 채점기는 어느 쪽인지 알 필요가 없다.
+  // 틀을 쓰면 칸을 합쳐 **화면에 보여 줄** 답안을 만든다.
   const composed = scaffold ? fillScaffold(scaffold.frame, slots) : answer
+  // 채점기에 보내는 것은 다르다 — 유형 1 은 문장이 아니라 **빈칸에 쓴 구**다.
+  // 문장을 통째로 보내면 나머지에 남은 원문 단어가 "안 바꿨다" 로 잡힌다(§42).
+  const submitted = answerToSubmit(view?.type ?? 0, scaffold, slots, composed)
   const canSubmit = isSpanTask
     ? span !== null
     : scaffold
