@@ -1,3 +1,4 @@
+import { scaffoldFor } from "../scaffold"
 import { describe, expect, it } from "vitest"
 import { goldSpanInContext, promptFor, toTaskView, type TaskRow } from "../render"
 
@@ -78,5 +79,28 @@ describe("goldSpanInContext", () => {
 
   it("정답 범위가 없으면 null", () => {
     expect(goldSpanInContext(task({ answer_start: null, answer_end: null }))).toBeNull()
+  })
+})
+
+// ⚠ 고1 학생으로 직접 써 보다가 만났다. 유형 2 틀이 이렇게 나갔다:
+//      (1) “fall” 를 명사로 바꾼 말
+//      (2) 무엇에 대한 것인지 (예: Surprises can)
+//    같은 힌트가 "동사를 명사로 바꾸라"고 하면서 **조동사를 주어 자리에 앉혔다.**
+describe("유형 2 묶기 틀 — 주어 예시에 조동사가 딸려오면 안 된다", () => {
+  it("조동사를 잘라 낸다", () => {
+    const s = scaffoldFor(2, "fold", "Surprises can fall from the sky like volcanic ash.", [])!
+    const subject = s.slots[1]!.hint
+    expect(subject).toContain("Surprises")
+    expect(subject, "조동사가 주어 예시에 들어갔다").not.toContain("can")
+  })
+
+  it("계사도 마찬가지다", () => {
+    const s = scaffoldFor(2, "fold", "The results are difficult to interpret.", [])!
+    expect(s.slots[1]!.hint).not.toMatch(/\bare\b/)
+  })
+
+  it("멀쩡한 주어는 그대로 둔다", () => {
+    const s = scaffoldFor(2, "fold", "natural ingredients often vary in their composition", [])!
+    expect(s.slots[1]!.hint).toContain("natural ingredients")
   })
 })
