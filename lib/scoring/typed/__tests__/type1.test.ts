@@ -1,3 +1,4 @@
+import { buildType1Prompt } from "../verdict1"
 import { describe, expect, it } from "vitest"
 import { avoidanceScore, checkAvoidance, TYPE1 } from "../type1"
 
@@ -112,5 +113,39 @@ describe("finalizeType1 — 의미 × 회피", () => {
     expect(r.score).toBeGreaterThan(0)
     expect(r.score).toBeLessThan(100)
     expect(r.judged).toBe(false)
+  })
+})
+
+// ⚠ 자가진단(고1 학생으로 직접 써 보기)에서 나왔다. §29 에서 유형 1 을 **구 단위**로
+//    바꿨는데 판정 프롬프트는 문장을 전제로 남아 있었다. 그래서 문맥 없이 구만 보고
+//    "symbolic ways → indirect methods" 를 changed 로 불렀고 학생은 20점을 받았다.
+//    (실측: 문맥 없이 구 단위 6/8 → 문맥을 주면 7/8, reworded 는 16/16)
+describe("유형 1 판정 프롬프트 — 구는 문맥 없이 판단할 수 없다", () => {
+  it("문맥이 있으면 프롬프트에 문장이 들어간다", () => {
+    const p = buildType1Prompt([
+      { id: "x", stimulus: "symbolic ways", answer: "indirect methods", context: "He often does so in symbolic ways." },
+    ])
+    expect(p).toContain("SENTENCE: He often does so in symbolic ways.")
+    expect(p).toContain("ORIGINAL: symbolic ways")
+  })
+
+  it("문맥이 없으면 그 줄을 넣지 않는다 — 빈 줄은 모델을 헷갈리게 한다", () => {
+    const p = buildType1Prompt([{ id: "x", stimulus: "a", answer: "b" }])
+    expect(p).not.toContain("SENTENCE:")
+  })
+
+  it("문장이 이미 준 것을 학생에게 다시 요구하지 말라고 못박는다", () => {
+    // 이 지시가 없으면 "eventually finding → at last discovering" 처럼 목적어가
+    // 없는 구를 "내용이 빠졌다" 로 본다.
+    expect(buildType1Prompt([{ id: "x", stimulus: "a", answer: "b" }])).toContain(
+      "Do not ask the student to repeat what the sentence already supplies",
+    )
+  })
+
+  it("프롬프트가 바뀌면 판정 캐시가 갈린다", async () => {
+    // 지문은 템플릿에서 자동으로 뽑는다. 문맥 줄을 넣었으므로 옛 판정이
+    // 그대로 돌아오면 안 된다.
+    const { PROMPT_FINGERPRINT } = await import("../verdict1")
+    expect(PROMPT_FINGERPRINT).toHaveLength(10)
   })
 })

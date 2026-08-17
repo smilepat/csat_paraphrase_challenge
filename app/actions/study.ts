@@ -208,7 +208,7 @@ export async function submitAnswer(
     // 무료에서 떨어지면 유료 판정을 부르지 않는다 — 비용 설계의 핵심이다
     const verdict = free.fail
       ? null
-      : (await judgeType1Cached([{ id: taskId, stimulus, answer }])).verdicts.get(taskId) ?? null
+      : (await judgeType1Cached([{ id: taskId, stimulus, answer, context: t.body.slice(t.context_start, t.context_end) }])).verdicts.get(taskId) ?? null
     const f = finalizeType1(free, verdict)
     result = { score: f.score, errorName: f.errorName, message: f.message, suggested: f.suggested, judged: f.judged, gold: null }
   } else if (t.type === 2) {

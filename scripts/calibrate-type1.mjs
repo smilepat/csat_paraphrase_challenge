@@ -12,7 +12,38 @@ import { judgeType1Batch } from "../lib/scoring/typed/verdict1.ts"
 loadEnv()
 if (process.argv.includes("--dry")) process.env.PARAPHRASE_FAKE_LLM = "1"
 
+// ⚠ 아래 a1~a8 은 전부 **문장 단위**다. 그런데 §29 에서 유형 1 을 **구 단위**로
+//   재설계했다(`accomplished professionals`, `eventually finding`). 그래서
+//   "유형1 8/8(100%)" 은 **앱이 더 이상 내지 않는 형태**에서 잰 숫자였고,
+//   실제 학생이 만나는 구 단위 판정에 대해서는 아무것도 말해 주지 않았다.
+//   §36 에서 유형 2 가 당한 것과 같은 실패다 — 측정이 배포된 과제를 안 담고 있었다.
+//
+//   p1~p8 이 실제 형태다. 자극은 프로덕션에서 그대로 가져왔다. 빼지 말 것.
 const CASES = [
+  // ── 구 단위 (실제 배포 형태) ──
+  { id: "p1", context: "Even for the best companies and most accomplished professionals, long track records of success are punctuated by slips.", stimulus: "accomplished professionals",
+    answer: "highly skilled experts", expect: "same", reworded: true },
+  { id: "p2", context: "Efforts to assist him may divert him from seeking and eventually finding the solution that will serve him best.", stimulus: "eventually finding",
+    answer: "at last discovering", expect: "same", reworded: true },
+  { id: "p3", context: "He often does so in symbolic ways that are hard for even him to understand.", stimulus: "symbolic ways",
+    answer: "indirect methods", expect: "same", reworded: true },
+  // 낱말을 안 바꿨다 — meaning 은 same 이되 reworded 가 false
+  { id: "p4", context: "Even for the best companies and most accomplished professionals, long track records of success are punctuated by slips.", stimulus: "accomplished professionals",
+    answer: "accomplished experts", expect: "same", reworded: false },
+  // 일부만 — 전문가 전체가 아니라 한 직업만 말했다
+  { id: "p5", context: "Even for the best companies and most accomplished professionals, long track records of success are punctuated by slips.", stimulus: "accomplished professionals",
+    answer: "skilled doctors", expect: "narrower", reworded: true },
+  // 한정을 지웠다 — "뛰어난" 이 빠지면 전문가 전체가 된다
+  { id: "p6", context: "Even for the best companies and most accomplished professionals, long track records of success are punctuated by slips.", stimulus: "accomplished professionals",
+    answer: "people with jobs", expect: "broader", reworded: true },
+  // 다른 이야기
+  { id: "p7", context: "He often does so in symbolic ways that are hard for even him to understand.", stimulus: "symbolic ways",
+    answer: "angry words", expect: "changed", reworded: true },
+  // 정반대
+  { id: "p8", context: "Even for the best companies and most accomplished professionals, long track records of success are punctuated by slips.", stimulus: "accomplished professionals",
+    answer: "unskilled workers", expect: "reversed", reworded: true },
+
+  // ── 문장 단위 (예전 설계. 회귀 감시용으로 남긴다) ──
   { id: "a1", stimulus: "natural ingredients often vary in their composition",
     answer: "raw materials from nature frequently differ in what they contain", expect: "same", reworded: true },
   { id: "a2", stimulus: "the position of the architect rose during the Roman Empire",

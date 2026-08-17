@@ -22,6 +22,13 @@ export interface Type1Request {
   /** 학생이 다시 말해야 했던 원문 */
   stimulus: string
   answer: string
+  /**
+   * 자극이 들어 있던 **문장**. §29 에서 유형 1 을 구 단위로 바꾼 뒤로 이것이 없으면
+   * 판정이 흔들린다 — "symbolic ways" 만 떼어 놓고는 "indirect methods" 가 같은
+   * 말인지 알 수 없다. 문장은 스스로 문맥을 담지만 **구는 담지 못한다.**
+   * (실측: 문맥 없이 구 단위 6/8, 문장 단위 8/8)
+   */
+  context?: string
 }
 
 export interface Type1Verdict {
@@ -46,8 +53,22 @@ export function buildType1Prompt(requests: Type1Request[]): string {
 keeping the meaning identical.
 
 ${requests
-  .map((r) => `[${r.id}]\nORIGINAL: ${r.stimulus}\nSTUDENT: ${r.answer}`)
+  .map((r) =>
+    [
+      `[${r.id}]`,
+      r.context ? `SENTENCE: ${r.context.replace(/\s+/g, " ")}` : null,
+      `ORIGINAL: ${r.stimulus}`,
+      `STUDENT: ${r.answer}`,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  )
   .join("\n\n")}
+
+The ORIGINAL is a PHRASE lifted from SENTENCE. Read it **in that sentence** to see what
+it refers to, then judge the STUDENT phrase against the ORIGINAL phrase alone.
+Do not ask the student to repeat what the sentence already supplies — a phrase that fits
+the same slot with the same meaning is "same", even if it looks incomplete on its own.
 
 For EACH item decide two things. They are SEPARATE judgements and must not influence
 each other.

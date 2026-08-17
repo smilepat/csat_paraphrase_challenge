@@ -67,9 +67,19 @@ function roughSubject(sentence: string): string | null {
   // 두 단어까지 본다("natural ingredients"). 이렇게 하지 않으면 "the brain replays"
   // 처럼 동사가 딸려와 예시가 틀린다.
   const rest = m[1] ? m[2]!.split(/\s+/)[0]! : m[2]!
-  const subject = `${m[1] ?? ""}${rest}`.trim().replace(TRAILING_ADV, "")
+  let subject = `${m[1] ?? ""}${rest}`.trim().replace(TRAILING_ADV, "")
+
+  // ⚠ 조동사·계사가 딸려오면 주어가 아니다. 실제로 학생 화면에
+  //   `(2) 무엇에 대한 것인지 (예: Surprises can)` 이 나갔다 —
+  //   같은 힌트가 "동사를 명사로 바꾸라"고 하면서 **조동사를 주어 자리에 앉혔다.**
+  //   firstVerbLike 는 조동사를 건너뛰므로 여기서 따로 잘라야 한다.
+  subject = subject.replace(AUXILIARY_TAIL, "").trim()
   return subject.length >= 3 ? subject : null
 }
+
+/** 주어 뒤에 붙어 나오는 조동사·계사. 여기까지가 주어가 아니다. */
+const AUXILIARY_TAIL =
+  /\s+(?:can|could|may|might|will|would|shall|should|must|is|are|was|were|has|have|had|do|does|did)$/i
 
 export function scaffoldFor(
   type: number,
