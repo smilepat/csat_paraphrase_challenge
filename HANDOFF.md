@@ -1582,3 +1582,98 @@ the ‘slight’ change  변경 내용보다 범위가 넓다
 approved 6낱말 이하 = 129
 rejected 7낱말 이상 = 108
 ```
+
+---
+
+## 36. 자가진단 — 채점기가 정상 명사구를 오답 처리하고 있었다
+
+힌트를 만들고 나서 스스로 물었다: **앱이 학생에게 주는 예시 답을, 앱 자신의
+채점기에 넣으면 통과하는가?** 통과하지 못했다.
+
+```
+유형2 예시 124건 → 구조 검사 실패 21건 (17%)
+```
+
+떨어진 21건은 전부 멀쩡한 명사구였다.
+
+```
+절로 봄 ✗  cue=based      «the assessment of outcomes based on personal management»
+절로 봄 ✗  cue=provided   «the assistance provided by group communication»
+절로 봄 ✗  cue=varied     «local inhabitants' varied responses to tourism's effects»
+절로 봄 ✗  cue=related    «the reduction of chances of developing stress-related disorders»
+절로 봄 ✗  cue=results    «the claim that conflict results from animosity»
+```
+
+힌트 문제가 아니다. **학생이 같은 것을 쓰면 "아직 문장입니다" 로 0점을 받는다.**
+후치 분사 수식은 학술 영어에서 명사구를 늘리는 가장 흔한 방법이라,
+**잘 쓰는 학생일수록 더 자주 걸린다.**
+
+### 왜 안 보였나
+
+`MODIFIER_BEFORE` 는 **전치** 분사만 본다(`a precisely controlled fashion`).
+후치 분사(`the assistance provided by …`)는 앞 낱말이 명사라서 안 걸린다.
+
+그런데 진짜 원인은 **측정이 이 형태를 담고 있지 않았다**는 것이다.
+캘리브레이션·측정 코퍼스의 명사구는 전부 채굴된 짧은 `the X of Y` 라
+후치 분사도 that절도 하나도 없다. 그래서 §M9 의 "유형2 12~13/14(85.7~92.9%)"
+와 "명사구 판별 100%" 는 **이 결함이 나타날 수 없는 표본에서 나온 숫자**였고,
+그 숫자를 품질 근거로 인용한 것이 잘못이었다.
+
+### 무엇을 고쳤나
+
+세 가지다. 방침은 이 파일이 원래 정한 것 그대로 — **확신이 있을 때만 떨어뜨린다.**
+
+| | 고친 것 |
+|---|---|
+| 토큰화 | 하이픈 복합어를 한 낱말로 잡는다. `stress-related` 의 `related` 가 굴절형 목록에 걸리고 있었다 |
+| 후치 분사 | `-ed` + 전치사(`by`/`on`/`as`…)가 뒤따르면 축약 관계절로 본다 |
+| 내포절 | 종속절 안의 정형동사에 `embedded` 표시를 붙인다. `the claim that X results from Y` 는 통째로 명사구다 |
+
+그리고 `checkStructure` 는 **`-ed` 형이거나 내포절이면 `fail` 대신 `unclear`** 를
+낸다. 유료 판정이 정하게 미루는 것이다. 미루면 돈이 들지만, 잘못 떨어뜨리면
+자습에서 회복이 안 된다.
+
+```
+유형2 예시 124건 → 구조 검사 실패 21건 → 4건 (17% → 3%)
+캘리브레이션 형식 판정 17/17 (100%) · 의미 15/17 · 치명적 오판정 0
+```
+
+### 대가와, 그 대가가 알려 준 것
+
+같은 코퍼스에서 절 판별이 3건 줄었다(735 → 732). 그 3건을 열어 보니
+**2건은 원래 우연히 맞던 것**이었다.
+
+```
+«Some schools and workplaces emphasize a stable, rote-learned database.»
+   예전: rote-learned 의 learned 를 동사로 오인 → 절 판정이 맞음
+   지금: 복합어를 한 낱말로 보므로 안 걸림. 진짜 동사 emphasize 는 원래도 못 잡았다
+```
+
+즉 **오탐이 정확도를 떠받치고 있었다.** 95.3% 라는 숫자에 그런 항목이 얼마나
+더 있는지는 모른다.
+
+### 고치지 않은 것 (알고 남긴다)
+
+복수 보통명사 뒤의 원형동사를 못 잡는다(`residents complain …`). 측정에서 놓친
+절 39건의 앞 낱말이 events·individuals·countries·cultures 처럼 전부 복수 명사였다.
+
+고치지 않은 이유는 **피해 방향**이다. 절 목표에서 놓치면 `unclear` 로 유료 판정에
+넘어갈 뿐 학생을 떨어뜨리지 않는다 — 비용 문제다. 반대로 복수 명사 뒤 원형을
+전부 정형으로 보면 `the ways cities form` 같은 명사구가 `fail` 이 되어 **학생이
+손해를 본다.** 이번에는 피해 쪽만 고쳤다.
+
+더 나쁜 짝도 하나 남아 있다: 한정사로 시작하면서 원형동사를 못 잡으면
+`these ingredients vary greatly` 가 **명사구로 통과한다.** `unclear` 는 유료 판정이
+바로잡지만 이건 아무도 못 잡는다. 둘 다 `type2.test.ts` 에 `[알려진 공백]` 으로
+못박아 뒀다 — 숨기면 다음 사람이 같은 자리에서 다시 놀란다.
+
+### 남은 자가진단 항목
+
+| | 무엇 | 상태 |
+|---|---|---|
+| 2 | 힌트 2칸(전략)과 3칸(어형)이 **다른 낱말**을 가리킨다 — 45% | 미해결 |
+| 3 | `flags` 에 `hint:N` 을 남기지만 **읽는 코드가 없다** | 미해결 |
+| 4 | 유형3 승인 55건은 LLM 판정 1회 + 사람 표본 6건이 전부다 | 미해결 |
+
+3번은 특히 짚어 둔다 — PR 과 §35 에 "지원 감소를 추적할 수 있다" 고 썼는데
+**추적하는 화면이 없다.** 주장이 구현보다 앞섰다.

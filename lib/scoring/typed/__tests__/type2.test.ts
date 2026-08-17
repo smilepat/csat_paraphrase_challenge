@@ -19,6 +19,77 @@ describe("findFiniteVerb", () => {
     }
   })
 
+  // ⚠ 이 묶음은 자가진단에서 나왔다. 앱이 학생에게 주는 **예시 답 124건을 앱 자신의
+  //    채점기에 넣어 보니 21건(17%)이 "아직 문장입니다" 로 떨어졌고**, 그 21건은 전부
+  //    멀쩡한 명사구였다. 학생이 같은 것을 쓰면 0점을 받는다는 뜻이다.
+  //
+  //    캘리브레이션·측정 코퍼스가 이 결함을 볼 수 없었던 것이 근본 원인이다.
+  //    거기 명사구는 전부 채굴된 짧은 `the X of Y` 라 **후치 분사도 that절도 없다.**
+  //    학생이 실제로 쓰는 긴 명사구를 여기 픽스처로 박아 둔다.
+  it("후치 분사가 붙은 긴 명사구를 절로 오인하지 않는다", () => {
+    for (const np of [
+      "the assistance provided by group communication to offset inherent inclinations",
+      "the assessment of outcomes based on personal management",
+      "the testimonial provided by negative emotions",
+      "the incorporation of interactive features by modern television",
+    ]) {
+      expect(findFiniteVerb(np).finite, np).toBe(false)
+      expect(checkStructure(np, "noun_phrase").verdict, np).toBe("pass")
+    }
+  })
+
+  it("하이픈 복합 형용사는 서술어가 아니다", () => {
+    // "stress-related" 의 related 가 굴절형 목록에 걸려 정형동사가 되고 있었다
+    expect(findFiniteVerb("the reduction of chances of developing stress-related disorders").finite).toBe(false)
+    expect(findFiniteVerb("a stable, rote-learned database").finite).toBe(false)
+  })
+
+  it("that절 안의 동사는 바깥 구조를 정하지 못한다", () => {
+    // "the claim that …" 은 통째로 명사구다. 확신 없이 떨어뜨리면 안 된다.
+    const hit = findFiniteVerb("the claim that conflict results from animosity")
+    expect(hit.finite).toBe(true)
+    expect(hit.embedded, "종속절 안임을 표시해야 한다").toBe(true)
+    expect(checkStructure("the claim that conflict results from animosity", "noun_phrase").verdict)
+      .toBe("unclear")
+  })
+
+  it("-ed 형은 확신 없이 떨어뜨리지 않는다", () => {
+    // 정형 과거인지 분사 수식어인지 표층으로는 못 가른다("the horse raced past the barn").
+    // 미루면 유료 판정이 정하지만, fail 로 처리하면 회복이 안 된다.
+    expect(checkStructure("local inhabitants' varied responses to tourism's effects", "noun_phrase").verdict)
+      .toBe("unclear")
+  })
+
+  it("그래도 명백한 절은 여전히 떨어뜨린다 — 미루기만 하면 관문이 아니다", () => {
+    for (const clause of [
+      "the production process can be controlled",
+      "conflict results from animosity",
+      "these ingredients were tested carefully by researchers",
+    ]) {
+      expect(checkStructure(clause, "noun_phrase").verdict, clause).toBe("fail")
+    }
+  })
+
+  // 알려진 공백을 **숨기지 않고 못박아 둔다.** 복수 보통명사 뒤의 원형동사는
+  // 정형인데도 못 잡는다(PLURAL_SUBJECT 가 대명사 위주라서다). 측정에서 놓친 절
+  // 39건의 앞 낱말이 events·individuals·countries·cultures 처럼 전부 복수 명사였다.
+  //
+  // 고치지 않은 이유: 이 누락은 **비용 문제이지 피해 문제가 아니다.** 절 목표에서
+  // 놓치면 unclear 로 유료 판정에 넘어갈 뿐 학생을 떨어뜨리지 않는다. 반대로
+  // 복수 명사 뒤 원형을 전부 정형으로 보면 "the ways cities form" 같은 명사구가
+  // fail 이 되어 **학생이 손해를 본다.** 지금은 피해 쪽만 고친다.
+  it("[알려진 공백] 복수 보통명사 뒤의 원형동사는 아직 못 잡는다", () => {
+    expect(findFiniteVerb("natural ingredients vary greatly in their composition").finite).toBe(false)
+    expect(findFiniteVerb("residents complain about traffic congestion").finite).toBe(false)
+    // 그래서 fail 이 아니라 unclear 로 미뤄지고, 유료 판정이 정한다
+    expect(checkStructure("natural ingredients vary greatly", "noun_phrase").verdict).toBe("unclear")
+
+    // ⚠ 더 나쁜 짝: 한정사로 시작하면 맨 명사구로 보여 **절이 통과한다.**
+    //    unclear 는 유료 판정이 바로잡지만 이건 아무도 못 잡는다.
+    //    피해 방향이 반대(못 접은 학생이 만점)라 이번 수정에는 넣지 않았다.
+    expect(checkStructure("these ingredients vary greatly", "noun_phrase").verdict).toBe("pass")
+  })
+
   it("소유격 's 를 계사로 오인하지 않는다", () => {
     // "the importance of an individual's action" 이 절로 오인되던 실제 사례
     expect(findFiniteVerb("the importance of an individual's action").finite).toBe(false)

@@ -129,7 +129,10 @@ const BASE_SET = new Set(VERB_BASES)
 function tokens(text: string): string[] {
   // 코퍼스의 아포스트로피는 곱슬표(U+2019)다. 곧은표로 맞춰야 축약형이 잡힌다.
   const norm = text.toLowerCase().replace(/[’ʼ՚]/g, "'")
-  return (norm.match(/[a-z]+(?:'[a-z]+)?|'[a-z]+/g) ?? [])
+  // ⚠ 하이픈 복합어는 **한 낱말로** 잡는다. 쪼개면 "stress-related disorders" 의
+  //   related 가 굴절형 목록에 걸려 정형동사가 된다. 복합 형용사이지 서술어가 아니다.
+  //   (실측: 이 한 줄이 없어서 정상 명사구가 절로 오판되고 있었다)
+  return (norm.match(/[a-z]+(?:-[a-z]+)+|[a-z]+(?:'[a-z]+)?|'[a-z]+/g) ?? [])
     .flatMap((t) => {
       const m = t.match(/^([a-z]+)('(?:s|re|ve|ll|d|m|t))$/)
       if (!m) return [t]
@@ -140,25 +143,60 @@ function tokens(text: string): string[] {
     .filter(Boolean)
 }
 
-export type FiniteHit = { finite: boolean; cue: string | null }
+/**
+ * 후치 분사(축약 관계절) 뒤에 오는 전치사들.
+ *   "the assistance **provided** by …"  "outcomes **based** on …"
+ * 여기 걸리면 서술어가 아니라 앞의 이름을 꾸미는 말이다. 학술 영어에서
+ * 명사구를 늘리는 가장 흔한 방법이라, 잘 쓰는 학생일수록 자주 만든다.
+ */
+const POST_MODIFIER_NEXT = new Set([
+  "by", "on", "in", "at", "for", "with", "from", "through", "under", "within",
+  "as", "upon", "into", "among", "against", "across", "during", "between",
+])
+
+/** 종속절을 여는 낱말. 이 뒤의 정형동사는 **내포된** 것이라 전체 구조를 안 정한다. */
+const COMPLEMENTIZER = new Set([
+  "that", "which", "who", "whom", "whose", "where", "when", "while",
+  "because", "although", "though", "if", "whether", "since", "unless", "until",
+])
+
+/** 과거형·과거분사 모양. 정형과 수식어 사이가 원래 모호한 자리다. */
+function participleShaped(w: string | null): boolean {
+  if (!w) return false
+  return /ed$/.test(w) || IRREGULAR_PAST.includes(w)
+}
+
+export type FiniteHit = {
+  finite: boolean
+  cue: string | null
+  /**
+   * 그 정형동사가 종속절 안에 있는가.
+   * "the claim **that** conflict **results** from animosity" 는 통째로 명사구다 —
+   * results 는 that 절 안이라 바깥 구조를 정하지 못한다.
+   */
+  embedded?: boolean
+}
 
 /** 정형동사가 있는가. 있으면 어떤 낱말 때문인지도 돌려준다(디버깅·피드백용). */
 export function findFiniteVerb(text: string): FiniteHit {
   const tk = tokens(text)
+  let sawComplementizer = false
   for (let i = 0; i < tk.length; i++) {
     const w = tk[i]
     const prev = i > 0 ? tk[i - 1] : ""
+    const next = i + 1 < tk.length ? tk[i + 1]! : ""
+    if (COMPLEMENTIZER.has(w!)) sawComplementizer = true
 
     // "'s" 는 대명사 뒤에서만 계사다. 명사 뒤면 소유격이라
     // "the importance of an individual's action" 이 절로 오인된다.
     if (w === "'s") {
-      if (COPULA_S_SUBJECT.has(prev)) return { finite: true, cue: "'s" }
+      if (COPULA_S_SUBJECT.has(prev)) return { finite: true, cue: "'s", embedded: sawComplementizer }
       continue
     }
     if (FINITE_MARKERS.has(w)) {
       // "to have", "to do" 는 정형이 아니다
       if (NONFINITE_BEFORE.has(prev) && (w === "have" || w === "do")) continue
-      return { finite: true, cue: w }
+      return { finite: true, cue: w, embedded: sawComplementizer }
     }
     // 굴절형은 그 자체로 정형이다. 다만 "to" 뒤는 아니다.
     if (INFLECTED.has(w) && !NONFINITE_BEFORE.has(prev)) {
@@ -171,10 +209,17 @@ export function findFiniteVerb(text: string): FiniteHit {
       // 부사(-ly)나 전치사·한정사 뒤에 오고 뒤에 낱말이 더 있으면 수식어로 본다.
       // 거리로 재면 "The arrival of the Industrial Age **changed** ..." 까지 삼킨다.
       if (MODIFIER_BEFORE.test(prev) && i + 1 < tk.length) continue
-      return { finite: true, cue: w }
+      // **후치** 분사도 수식어다 — 여기까지 오는 것이 앞의 MODIFIER_BEFORE 로는 안 잡힌다.
+      //   "the assistance provided by group communication"
+      //   "the assessment of outcomes based on personal management"
+      // 전치사가 뒤따르는 -ed 형이고 앞이 주어가 될 대명사가 아니면 축약 관계절로 본다.
+      if (participleShaped(w!) && POST_MODIFIER_NEXT.has(next) && !PLURAL_SUBJECT.has(prev)) continue
+      return { finite: true, cue: w, embedded: sawComplementizer }
     }
     // 복수·1·2인칭 주어 뒤의 원형은 정형이다(they vary, people believe)
-    if (BASE_SET.has(w) && PLURAL_SUBJECT.has(prev)) return { finite: true, cue: w }
+    if (BASE_SET.has(w) && PLURAL_SUBJECT.has(prev)) {
+      return { finite: true, cue: w, embedded: sawComplementizer }
+    }
   }
   return { finite: false, cue: null }
 }
@@ -220,7 +265,7 @@ export function checkStructure(
   const text = answer.trim()
   if (!text) return { verdict: "fail", message: "답을 아직 쓰지 않았습니다.", cue: null }
 
-  const { finite, cue } = findFiniteVerb(text)
+  const { finite, cue, embedded } = findFiniteVerb(text)
 
   if (target === "clause") {
     if (finite) return { verdict: "pass", message: "문장으로 폈습니다.", cue }
@@ -243,6 +288,15 @@ export function checkStructure(
       return { verdict: "pass", message: "이름으로 접었습니다.", cue }
     }
     return { verdict: "unclear", message: "구조를 확인하는 중입니다.", cue: null }
+  }
+  // ⚠ **확신이 있을 때만 떨어뜨린다.** -ed 형은 정형과 분사 수식어 사이가 원래
+  //    모호하고("the horse raced past the barn"), 종속절 안의 동사는 바깥 구조를
+  //    정하지 못한다. 이 둘을 fail 로 처리하면 **제대로 접은 학생이 0점**을 받는다.
+  //    실측: 앱 자신의 예시 답 124건 중 21건(17%)이 이 자리에서 떨어지고 있었고,
+  //    그 21건은 전부 멀쩡한 명사구였다. 캘리브레이션 세트의 명사구가 전부
+  //    짧은 `the X of Y` 라서 이 결함이 드러날 수가 없었다.
+  if (participleShaped(cue) || embedded) {
+    return { verdict: "unclear", message: "구조를 확인하는 중입니다.", cue }
   }
   return {
     verdict: "fail",
