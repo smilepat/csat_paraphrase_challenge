@@ -12,10 +12,7 @@
 import { db } from "@/lib/db"
 import { ulid } from "@/lib/codes"
 import { toTaskView, type TaskRow, type TaskView } from "@/lib/tasks/render"
-import { checkAvoidance, finalizeType1 } from "@/lib/scoring/typed/type1"
-import { scoreType2, finalizeType2 } from "@/lib/scoring/typed/type2"
-import { checkSpan, finalizeType3 } from "@/lib/scoring/typed/type3"
-import { judgeType1Cached, judgeType2Cached } from "@/lib/scoring/typed/cache"
+import { gradeTypedAnswer, toGradable } from "@/lib/scoring/typed/grade"
 import { recordAttempt, learnerReport, today } from "@/lib/learners/attempts"
 import { threeAxisProfile, type AttemptRow, type AxisType } from "@/lib/learners/history"
 import { pickNext, type TaskCandidate } from "@/lib/learners/pick"
@@ -192,44 +189,13 @@ export async function submitAnswer(
   })
   if (!rows.length) throw new Error("문항을 찾을 수 없습니다.")
   const t = rows[0] as unknown as TaskRow & { body: string }
-  const stimulus = t.body.slice(t.stimulus_start, t.stimulus_end)
 
+  // 채점은 데모(app/actions/demo.ts)와 **같은 함수**를 쓴다. 사본을 두면
+  // 연수에서 보여 주는 점수가 실제 앱과 조용히 달라진다.
+  const graded = await gradeTypedAnswer(toGradable(t), t.body, answer, span)
   // 모범답안은 유형별 채점이 끝난 뒤 마지막에 한 번만 붙인다 — 세 갈래가 각자
   // 붙이면 한 곳을 빠뜨려도 안 드러난다.
-  let result: Omit<SubmitResult, "model">
-
-
-  if (t.type === 1) {
-    const free = checkAvoidance({
-      answer,
-      stimulus,
-      avoidWords: t.avoid_words ? (JSON.parse(t.avoid_words) as string[]) : [],
-    })
-    // 무료에서 떨어지면 유료 판정을 부르지 않는다 — 비용 설계의 핵심이다
-    const verdict = free.fail
-      ? null
-      : (await judgeType1Cached([{ id: taskId, stimulus, answer, context: t.body.slice(t.context_start, t.context_end) }])).verdicts.get(taskId) ?? null
-    const f = finalizeType1(free, verdict)
-    result = { score: f.score, errorName: f.errorName, message: f.message, suggested: f.suggested, judged: f.judged, gold: null }
-  } else if (t.type === 2) {
-    const target = (t.target_form ?? "clause") as "noun_phrase" | "clause"
-    const free = scoreType2({ answer, stimulus, target })
-    const verdict = free.needsVerdict
-      ? (await judgeType2Cached([{ id: taskId, stimulus, target, answer }])).verdicts.get(taskId) ?? null
-      : null
-    const f = finalizeType2({ answer, stimulus, target }, free, verdict)
-    result = { score: f.score, errorName: f.errorName, message: f.message, suggested: f.suggested, judged: f.judged, gold: null }
-  } else {
-    if (!span) throw new Error("범위를 표시해 주세요.")
-    // 클라이언트는 문맥 기준 오프셋을 보낸다 — 본문 기준으로 되돌린다
-    const free = checkSpan({
-      answer: { start: span.start + t.context_start, end: span.end + t.context_start },
-      gold: { start: t.answer_start ?? 0, end: t.answer_end ?? 0 },
-      stimulusStart: t.stimulus_start,
-    })
-    const f = finalizeType3(free, null)
-    result = { score: f.score, errorName: f.errorName, message: f.message, suggested: "", judged: false, gold: null }
-  }
+  const result: Omit<SubmitResult, "model"> = { ...graded, gold: null }
 
   await recordAttempt({
     learnerId,
