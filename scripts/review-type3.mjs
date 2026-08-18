@@ -38,10 +38,21 @@ const REJECT = {
   "CSAT_EVEN_2022_40#t3-02": "'The other view' 는 되받기가 아니라 **새 관점을 여는** 표현이다",
 }
 
+// ⚠ 이 스크립트의 기본값은 **"목록에 없으면 승인"** 이다. 2026-08-14 의 30건에는
+// 맞았지만, 그 뒤 §40 이 두 판정이 갈린 문항을 raw 로 되돌려 두기 시작했다.
+// 그대로 돌리면 사람이 보려고 세워 둔 자리를 통째로 승인한다. 그래서 뺀다.
 const { rows } = await db.execute({
-  sql: "SELECT id FROM pc_tasks WHERE type=3 AND review_status='raw' ORDER BY id",
+  sql: `SELECT id FROM pc_tasks
+        WHERE type=3 AND review_status='raw'
+          AND COALESCE(notes,'') NOT LIKE '%확인 필요%'
+        ORDER BY id`,
   args: [],
 })
+const heldCount = (await db.execute({
+  sql: "SELECT count(*) c FROM pc_tasks WHERE type=3 AND review_status='raw' AND COALESCE(notes,'') LIKE '%확인 필요%'",
+  args: [],
+})).rows[0].c
+if (heldCount) console.log(`사람 확인 대기 ${heldCount}건은 이 스크립트가 건드리지 않습니다 (§40)\n`)
 
 const reject = rows.map((r) => String(r.id)).filter((id) => REJECT[id])
 const approve = rows.map((r) => String(r.id)).filter((id) => !REJECT[id])
