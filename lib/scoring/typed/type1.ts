@@ -162,12 +162,18 @@ export function finalizeType1(
   }
 
   const meaning = MEANING_SCORE[verdict.meaning] / 100
+  const score = Math.round(100 * meaning * avoidance)
   return {
-    score: Math.round(100 * meaning * avoidance),
+    score,
     errorName: verdict.meaning === "same" ? null : MEANING_LABEL[verdict.meaning],
     // 진단명이 아니라 **인정 + 팁**을 보여 준다. 진단명은 배지로만 남는다.
     message: meaningFeedback(verdict.meaning, verdict.koreanFeedback),
-    suggested: verdict.suggested,
+    // 만점이면 고칠 것이 없다. "이 답을 고친다면" 을 붙이면 잘한 학생에게 트집처럼
+    // 읽히고, 판정기가 가끔 내놓는 **엉뚱한 문장**이 하필 거기서 가장 크게 보인다.
+    // (실측: 100점 답안에 "confirm the data you obtain is precise and dependable" 이 붙었다.
+    //  문항과 아무 상관이 없는 문장이었고, 화면에서는 그것이 조언처럼 보인다.)
+    // 모범답안 칸은 그대로 나가므로 견줄 것은 여전히 있다.
+    suggested: score >= 100 ? "" : verdict.suggested,
     judged: true,
     parts: { meaning, avoidance },
   }

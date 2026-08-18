@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { nextTask, studyReport, submitAnswer, taskHint, type NextTask, type SubmitResult } from "@/app/actions/study"
 import type { HintStep } from "@/lib/tasks/hint"
 import { TaskContext } from "@/components/task-context"
+import { Emphasis } from "@/components/emphasis"
 import { answerToSubmit, fillScaffold } from "@/lib/tasks/scaffold"
 
 type Report = Awaited<ReturnType<typeof studyReport>>
@@ -181,7 +182,9 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
             <span className="text-[11px] text-[var(--color-muted)]">{item.reason}</span>
           </div>
 
-          <p className="text-sm font-semibold">{view.prompt}</p>
+          <p className="text-sm font-semibold">
+            <Emphasis text={view.prompt} />
+          </p>
 
           <div className="rounded-xl bg-[var(--color-soft)] p-4">
             <TaskContext
@@ -280,7 +283,9 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
               <p className="text-[11px] font-bold text-[var(--color-brand)]">
                 도움 {s.level}/{steps.length} · {s.label}
               </p>
-              <p className="mt-1 whitespace-pre-line text-sm">{s.body}</p>
+              <p className="mt-1 whitespace-pre-line text-sm">
+                <Emphasis text={s.body} />
+              </p>
             </div>
           ))}
 

@@ -10,6 +10,26 @@ export default function Home() {
         </p>
       </header>
 
+      {/* 데모가 맨 위에 있는 이유: 연수에서 처음 만나는 사람은 방을 열 것도, 코드도 없다.
+          로그인·승인 없이 바로 만져 볼 수 있는 것이 하나는 있어야 한다. */}
+      <Link
+        href="/demo"
+        className="card mb-4 block border-2 border-[var(--color-brand)] p-6 transition hover:-translate-y-0.5 hover:shadow-lg"
+      >
+        <div className="flex items-baseline gap-2">
+          <span className="text-lg font-bold text-[var(--color-brand)]">
+            바꿔 말하기 세 유형 — 한 문제씩 풀어 보기
+          </span>
+          <span className="rounded-full bg-[var(--color-brand)] px-2 py-0.5 text-[11px] font-bold text-white">
+            로그인 없이
+          </span>
+        </div>
+        <p className="mt-2 text-sm text-[var(--color-muted)]">
+          ①같은 개념 다른 낱말 ②문장↔이름(명사화) ③앞을 되받는 이름. 학생이 보는 화면·채점기로
+          유형마다 한 문제씩 직접 풀어 봅니다. 교사 연수용이라 기록은 남지 않습니다.
+        </p>
+      </Link>
+
       <div className="grid gap-4 sm:grid-cols-2">
         <Link
           href="/host"

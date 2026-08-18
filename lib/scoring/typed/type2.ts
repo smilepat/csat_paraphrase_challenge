@@ -183,7 +183,8 @@ export function finalizeType2(
     score,
     errorName: verdict.meaning === "same" ? null : MEANING_LABEL[verdict.meaning],
     message: meaningFeedback(verdict.meaning, verdict.koreanFeedback),
-    suggested: verdict.suggested,
+    // 만점이면 고칠 것이 없다 — 유형 1 과 같은 규칙이다(type1.ts 의 주석 참고).
+    suggested: score >= 100 ? "" : verdict.suggested,
     judged: true,
     flags,
   }

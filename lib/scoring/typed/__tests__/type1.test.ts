@@ -94,6 +94,21 @@ describe("finalizeType1 — 의미 × 회피", () => {
     expect(finalizeType1(freeOf(good), v({ meaning: "reversed" })).score).toBe(0)
   })
 
+  // 만점 답안에 "이 답을 고친다면" 이 붙으면 잘한 학생에게 트집처럼 읽힌다.
+  // 게다가 판정기는 가끔 문항과 무관한 문장을 suggested 로 내놓는다(실측) —
+  // 그 헛것이 하필 만점 화면에서 가장 크게 보인다.
+  it("만점이면 고칠 것을 제안하지 않는다", () => {
+    const r = finalizeType1(freeOf(good), v({ suggested: "something else entirely" }))
+    expect(r.score).toBe(100)
+    expect(r.suggested).toBe("")
+  })
+
+  it("만점이 아니면 제안을 그대로 준다 — 고칠 것이 있는 쪽에는 필요하다", () => {
+    const r = finalizeType1(freeOf(good), v({ meaning: "narrower", suggested: "try this instead" }))
+    expect(r.score).toBeLessThan(100)
+    expect(r.suggested).toBe("try this instead")
+  })
+
   it("무료 단계에서 떨어지면 유료 판정을 쓰지 않는다", () => {
     const r = finalizeType1(freeOf(base.stimulus), null)
     expect(r.score).toBe(0)
