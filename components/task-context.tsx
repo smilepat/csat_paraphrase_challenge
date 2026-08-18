@@ -79,7 +79,9 @@ export function TaskContext({
       ref={ref}
       onMouseUp={handleUp}
       onTouchEnd={handleUp}
-      className="whitespace-pre-wrap font-serif text-[1.05rem] leading-[1.8] text-[var(--color-ink)]"
+      // rem 이 아니라 em 이다. 기본 화면에서는 값이 같고(부모가 16px),
+      // 데모처럼 부모가 글자를 키운 곳에서는 지문도 같이 커진다.
+      className="whitespace-pre-wrap font-serif text-[1.05em] leading-[1.8] text-[var(--color-ink)]"
     >
       {segments(context.length, marks).map((seg, i) => {
         const text = context.slice(seg.start, seg.end)

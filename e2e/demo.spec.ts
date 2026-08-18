@@ -53,10 +53,33 @@ test("지시문의 강조가 별표째 나오지 않는다", async ({ page }) =>
   // 학생 화면도 같은 결함이었다(components/emphasis.tsx 로 함께 고침).
   for (const name of ["다른 낱말로", "이름↔문장", "되받는 이름"]) {
     await page.getByRole("button", { name: new RegExp(name) }).click()
-    const prompt = page.locator("main section p.font-semibold").first()
+    const prompt = page.getByTestId("demo-prompt")
     await expect(prompt).not.toContainText("**")
     await expect(prompt.locator("b")).toHaveCount(1)
   }
+})
+
+test("글자 크기를 화면에서 바꾸고, 다시 와도 그 크기를 기억한다", async ({ page }) => {
+  await page.goto("/demo")
+  const prompt = page.getByTestId("demo-prompt")
+  const sizeOf = async () =>
+    Number((await prompt.evaluate((el) => getComputedStyle(el).fontSize)).replace("px", ""))
+
+  const before = await sizeOf()
+  await page.getByRole("button", { name: "아주 크게" }).click()
+  const after = await sizeOf()
+  expect(after).toBeGreaterThan(before)
+
+  // 지문도 같이 커져야 한다 — 지시문만 커지면 발표 화면에서 정작 읽을 것이 작다
+  const passage = await page
+    .locator("main p.font-serif")
+    .first()
+    .evaluate((el) => Number(getComputedStyle(el).fontSize.replace("px", "")))
+  expect(passage).toBeGreaterThan(after)
+
+  // 연수 중 새로고침해도 다시 맞추지 않아도 된다
+  await page.reload()
+  expect(await sizeOf()).toBe(after)
 })
 
 test("유형 1 — 원문 그대로 내면 무료 단계에서 걸린다 (LLM 없이도 채점이 멈추지 않는다)", async ({
@@ -87,7 +110,7 @@ test("유형 3 — 범위를 끌어 제출하면 점수가 나오고, 다시 풀
   await dragFirstSentence(page)
   await page.getByRole("button", { name: "제출" }).click()
 
-  const score = page.locator("span.tabular-nums").first()
+  const score = page.getByTestId("demo-score")
   await expect(score).toBeVisible({ timeout: 20_000 })
   expect(Number(await score.innerText())).toBeGreaterThan(0)
 
