@@ -188,7 +188,12 @@ quite very just even still also thus hence indeed perhaps maybe
  */
 const AVOID_MAX = 5
 
-function contentWords(text: string, freq: FreqRank): string[] {
+/**
+ * 내용어 고르기. 데모 문항(lib/demo/items.ts)도 이 함수를 쓴다 —
+ * 손으로 적으면 데모의 난이도가 실제 문항과 달라지고, 그 차이는 연수에서
+ * "맞는 답인데 35점" 같은 모양으로 드러난다.
+ */
+export function contentWords(text: string, freq: FreqRank): string[] {
   const seen = new Map<string, number>()
   for (const raw of text.toLowerCase().match(/[a-z][a-z'-]{3,}/g) ?? []) {
     const w = raw.replace(/^['-]+|['-]+$/g, "")

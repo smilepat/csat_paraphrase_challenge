@@ -65,9 +65,14 @@ test("유형 1 — 원문 그대로 내면 무료 단계에서 걸린다 (LLM �
   await page.goto("/demo")
   await page.getByRole("button", { name: /다른 낱말로/ }).click()
 
+  // 자극을 **화면에서 읽어** 그대로 낸다. 여기에 문구를 적어 두면 문항을 바꿀 때마다
+  // 검사가 조용히 옛 문장을 내고, 그러면 무엇을 확인하는 검사인지 알 수 없게 된다.
+  const stimulus = (await page.locator("main p.font-serif span.underline").first().innerText()).trim()
+  expect(stimulus.length).toBeGreaterThan(0)
+
   const slot = page.locator('main input[type="text"], main input:not([type])').first()
   await expect(slot).toBeVisible()
-  await slot.fill("remember far more") // 원문 그대로
+  await slot.fill(stimulus) // 원문 그대로
   await page.getByRole("button", { name: "제출" }).click()
 
   await expect(page.getByText(/원문 단어/)).toBeVisible({ timeout: 20_000 })
