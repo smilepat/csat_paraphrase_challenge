@@ -17,6 +17,8 @@
 // 고칠 때마다 어긋나고, 어긋난 오프셋은 화면에서 조용히 이상한 곳을 밑줄 친다(§43).
 // ============================================================
 
+import freqRank from "@/data/freq-rank.json"
+import { contentWords } from "@/lib/tasks/mine"
 import type { HintMaterial } from "@/lib/tasks/hint"
 import { toTaskView, type TaskRow, type TaskView } from "@/lib/tasks/render"
 
@@ -33,7 +35,11 @@ export type DemoItem = {
   /** 유형 3 의 정답 범위. body 안에 그대로 있어야 한다. */
   answer?: string
   targetForm?: "noun_phrase" | "clause"
-  avoidWords?: string[]
+  /**
+   * 다시 쓰면 안 되는 낱말. **적지 않는다** — 채굴기와 같은 규칙(contentWords)으로 뽑는다.
+   * 손으로 적었더니 실제 문항이라면 들어갔을 낱말이 빠지고, 데모가 실제보다
+   * 쉬워 보였다. 반대로 넣지 말았어야 할 낱말을 넣으면 맞는 답이 낮은 점수를 받는다.
+   */
   hints: HintMaterial
   /** 연수 진행자용 한 줄 — 이 유형이 무엇을 재고 수능 어디에 나오는가 */
   teacherNote: string
@@ -45,16 +51,15 @@ export const DEMO_ITEMS: DemoItem[] = [
     type: 1,
     direction: null,
     body:
-      "Students who go over their notes the same evening remember far more than students who wait a week. " +
-      "The gap comes from the delay itself, not from how long each group studied.",
-    stimulus: "remember far more",
+      "Steady daily practice beats one long study session the night before a test. " +
+      "The brain needs time between meetings with a word, and a single evening cannot supply it.",
+    stimulus: "Steady daily practice",
     context:
-      "Students who go over their notes the same evening remember far more than students who wait a week.",
-    avoidWords: ["remember", "more"],
+      "Steady daily practice beats one long study session the night before a test.",
     hints: {
-      gloss: "훨씬 더 많이 기억한다",
-      shape: "r_____ m___ b_____  (3낱말)",
-      example: "recall much better",
+      gloss: "꾸준한 매일의 연습",
+      shape: "r______ e________ t________  (3낱말)",
+      example: "regular everyday training",
     },
     teacherNote:
       "같은 개념을 다른 낱말로 옮기는 힘입니다. 특정 문항 번호에만 나오는 것이 아니라 " +
@@ -106,6 +111,12 @@ export const DEMO_ITEMS: DemoItem[] = [
   },
 ]
 
+/** 채굴기와 같은 규칙으로 다시 쓰면 안 되는 낱말을 뽑는다(유형 1 전용). */
+export function demoAvoidWords(item: DemoItem): string[] {
+  if (item.type !== 1) return []
+  return contentWords(item.stimulus, freqRank as Record<string, number>).slice(0, 4)
+}
+
 /** body 안에서 조각을 찾는다. 없으면 **바로 터뜨린다** — 조용히 0 으로 뭉개면 화면에서 엉뚱한 곳이 밑줄 쳐진다. */
 function locate(body: string, piece: string, label: string, itemId: string): { start: number; end: number } {
   const start = body.indexOf(piece)
@@ -133,7 +144,7 @@ export function demoTaskRow(item: DemoItem): TaskRow & { body: string } {
     target_form: item.targetForm ?? null,
     answer_start: answer?.start ?? null,
     answer_end: answer?.end ?? null,
-    avoid_words: item.avoidWords ? JSON.stringify(item.avoidWords) : null,
+    avoid_words: item.type === 1 ? JSON.stringify(demoAvoidWords(item)) : null,
     body: item.body,
   }
 }

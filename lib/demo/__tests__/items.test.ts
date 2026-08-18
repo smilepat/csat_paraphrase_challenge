@@ -7,7 +7,7 @@
 // ============================================================
 
 import { describe, it, expect } from "vitest"
-import { DEMO_ITEMS, demoTaskRow, demoTaskView } from "../items"
+import { DEMO_ITEMS, demoAvoidWords, demoTaskRow, demoTaskView } from "../items"
 import { hintSteps } from "@/lib/tasks/hint"
 import { formAgreesWithExample } from "@/lib/tasks/hint-material"
 
@@ -49,18 +49,25 @@ describe("데모 문항", () => {
     })
   }
 
-  it("유형 1 은 피할 낱말이 실제로 자극 안에 있다", () => {
+  it("유형 1 의 피할 낱말은 채굴기 규칙에서 나오고 자극 안에 있다", () => {
     const item = DEMO_ITEMS.find((i) => i.type === 1)!
-    expect(item.avoidWords?.length).toBeGreaterThan(0)
-    for (const w of item.avoidWords ?? []) {
-      expect(item.stimulus.toLowerCase()).toContain(w.toLowerCase())
-    }
+    const avoid = demoAvoidWords(item)
+    expect(avoid.length).toBeGreaterThan(0)
+    for (const w of avoid) expect(item.stimulus.toLowerCase()).toContain(w.toLowerCase())
+  })
+
+  // 피할 낱말이 둘이면 하나만 남겨도 회피 점수가 0.35 로 떨어진다 —
+  // 뜻이 완벽해도 35점이다(프로덕션 유형1 의 82%가 이 상태다).
+  // 데모에서 그 화면을 보여 주면 연수 참가자는 채점기를 못 믿게 된다.
+  it("유형 1 데모는 피할 낱말이 셋 이상이라 부분점수가 무너지지 않는다", () => {
+    const item = DEMO_ITEMS.find((i) => i.type === 1)!
+    expect(demoAvoidWords(item).length).toBeGreaterThanOrEqual(3)
   })
 
   it("유형 1 의 예시 답은 피해야 할 낱말을 쓰지 않는다 — 쓰면 앱이 자기 예시를 0점 처리한다", () => {
     const item = DEMO_ITEMS.find((i) => i.type === 1)!
     const example = (item.hints.example ?? "").toLowerCase()
-    for (const w of item.avoidWords ?? []) {
+    for (const w of demoAvoidWords(item)) {
       expect(example).not.toContain(w.toLowerCase())
     }
   })

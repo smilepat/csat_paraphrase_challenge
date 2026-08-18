@@ -17,6 +17,7 @@
 import { createHash } from "node:crypto"
 
 import { callGemini, isLlmEnabled, parseGeminiJson } from "../../gemini"
+import { matchById } from "./verdict1"
 
 export type Type2Form = "noun_phrase" | "clause" | "other"
 export type Type2Meaning = "same" | "narrower" | "broader" | "changed" | "reversed"
@@ -181,15 +182,8 @@ export async function judgeType2Batch(
       const parsed = parseGeminiJson<unknown[]>(raw)
       if (!Array.isArray(parsed)) continue
 
-      const byId = new Map(
-        parsed
-          .map((o) => [(o as { id?: string })?.id, o] as const)
-          .filter(([id]) => typeof id === "string"),
-      )
-      chunk.forEach((r, j) => {
-        const found = byId.get(r.id) ?? parsed[j]
-        if (found) out.set(r.id, coerce(found, r.id))
-      })
+      // 순서로 맞추지 않는다 — 이유는 verdict1.ts 의 matchById 주석에 있다.
+      for (const [id, v] of matchById(parsed, chunk, coerce, "verdict2")) out.set(id, v)
       if (out.size < i + chunk.length) {
         console.warn(`[verdict2] 응답이 짧습니다 — ${chunk.length}건 요청, 누계 ${out.size}건 수신`)
       }

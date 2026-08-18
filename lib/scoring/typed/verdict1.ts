@@ -136,6 +136,48 @@ function fakeVerdict(r: Type1Request): Type1Verdict {
   return { id: r.id, meaning: "same", reworded: !same, koreanFeedback: "(가짜 판정)", suggested: "" }
 }
 
+/**
+ * 응답을 **id 로만** 요청에 맞춘다.
+ *
+ * 예전에는 id 가 없으면 순서로 맞췄다(`byId.get(r.id) ?? parsed[j]`). 정상 응답은
+ * id 를 그대로 돌려주므로(실측 8/8) 그 대체 경로가 나르던 것은 **모델이 헛나간
+ * 응답뿐**이었다 — 가장 위험한 순간에만 켜지는 안전장치였던 셈이다.
+ *
+ * 실제로 유형 1 판정이 `id: 1,2,3` 에 "worker contentment" 이야기를 담아 돌아온 적이
+ * 있고, 순서로 맞추는 바람에 **다른 문항의 판정이 학생 답안에 붙었다**(100점 답안에
+ * 무관한 조언이 달린 사고의 원인). 그 판정은 캐시에도 저장되므로 한 번 어긋나면
+ * 그 답안에 영원히 남는다.
+ *
+ * 못 맞춘 것은 그냥 버린다. 판정이 없으면 무료 점수만으로 채점되고
+ * (§"의미 확인은 잠시 뒤에"), 그쪽이 남의 판정을 붙이는 것보다 낫다.
+ */
+export function matchById<TReq extends { id: string }, TVerdict>(
+  parsed: unknown[],
+  chunk: TReq[],
+  coerceOne: (raw: unknown, id: string) => TVerdict,
+  label: string,
+): Map<string, TVerdict> {
+  const byId = new Map<string, unknown>()
+  for (const o of parsed) {
+    const id = (o as { id?: unknown })?.id
+    if (typeof id === "string") byId.set(id, o)
+  }
+  const out = new Map<string, TVerdict>()
+  const missed: string[] = []
+  for (const r of chunk) {
+    const found = byId.get(r.id)
+    if (found) out.set(r.id, coerceOne(found, r.id))
+    else missed.push(r.id)
+  }
+  if (missed.length) {
+    console.warn(
+      `[${label}] 응답에 없는 문항 ${missed.length}건은 버립니다 — 순서로 맞추지 않습니다. ` +
+        `요청: ${missed.slice(0, 3).join(", ")} / 응답 id: ${[...byId.keys()].slice(0, 3).join(", ") || "(없음)"}`,
+    )
+  }
+  return out
+}
+
 export async function judgeType1Batch(
   requests: Type1Request[],
 ): Promise<Map<string, Type1Verdict>> {
@@ -157,15 +199,7 @@ export async function judgeType1Batch(
       })
       const parsed = parseGeminiJson<unknown[]>(raw)
       if (!Array.isArray(parsed)) continue
-      const byId = new Map(
-        parsed
-          .map((o) => [(o as { id?: string })?.id, o] as const)
-          .filter(([id]) => typeof id === "string"),
-      )
-      chunk.forEach((r, j) => {
-        const found = byId.get(r.id) ?? parsed[j]
-        if (found) out.set(r.id, coerce(found, r.id))
-      })
+      for (const [id, v] of matchById(parsed, chunk, coerce, "verdict1")) out.set(id, v)
     } catch (e) {
       console.error("[verdict1] 판정 실패 — 회피 점수만 사용합니다:", (e as Error).message)
     }
