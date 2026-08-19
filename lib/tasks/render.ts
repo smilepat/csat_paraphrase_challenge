@@ -50,15 +50,15 @@ export type TaskView = {
 }
 
 const PROMPTS: Record<string, string> = {
-  "1": "밑줄 친 부분을 **같은 뜻의 다른 말로** 다시 쓰세요.",
-  "2:fold": "밑줄 친 문장을 **명사구 하나로 묶으세요.** 동사를 남기지 않습니다.",
-  "2:unfold": "밑줄 친 명사구를 **문장으로 푸세요.** 주어와 동사를 세웁니다.",
-  "3:span": "밑줄 친 표현이 **앞의 무엇을 받는지** 범위를 끌어서 표시하세요.",
-  "3:name": "밑줄 친 범위를 하나로 묶는 **명사구**를 쓰세요.",
+  "1": "밑줄 친 부분을 **뜻은 그대로 두고 다른 낱말로** 바꿔 쓰세요.",
+  "2:fold": "밑줄 친 문장을 **명사구 하나로 바꿔 쓰세요.** 동사를 명사로 바꿉니다.",
+  "2:unfold": "밑줄 친 명사구를 **문장으로 바꿔 쓰세요.** 주어와 동사를 갖춥니다.",
+  "3:span": "밑줄 친 표현이 **앞의 어떤 내용을 가리키는지** 지문에서 드래그해 선택하세요.",
+  "3:name": "선택한 내용 전체를 아우르는 **명사구**를 쓰세요.",
 }
 
 export function promptFor(type: number, direction: string | null): string {
-  return PROMPTS[direction ? `${type}:${direction}` : String(type)] ?? "다시 써 보세요."
+  return PROMPTS[direction ? `${type}:${direction}` : String(type)] ?? "자기 표현으로 바꿔 써 보세요."
 }
 
 /**

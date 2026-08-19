@@ -56,13 +56,13 @@ export function checkSpan(input: Type3Input): Type3Free {
   const { answer, gold, stimulusStart } = input
 
   if (answer.end <= answer.start) {
-    return { iou: 0, verdict: "invalid", message: "범위를 표시하지 않았습니다.", nameWorthJudging: false }
+    return { iou: 0, verdict: "invalid", message: "선택한 부분이 없습니다.", nameWorthJudging: false }
   }
   if (answer.start >= stimulusStart) {
     return {
       iou: 0,
       verdict: "invalid",
-      message: "이 표현은 **앞의** 내용을 묶습니다. 표현보다 앞에서 범위를 찾아보세요.",
+      message: "이 표현은 **앞에 나온** 내용을 가리킵니다. 밑줄보다 앞쪽에서 찾아보세요.",
       nameWorthJudging: false,
     }
   }
@@ -70,13 +70,13 @@ export function checkSpan(input: Type3Input): Type3Free {
   const iou = overlap(answer, gold)
 
   if (iou >= TYPE3.hit) {
-    return { iou, verdict: "hit", message: "받는 범위를 맞혔습니다.", nameWorthJudging: true }
+    return { iou, verdict: "hit", message: "가리키는 부분을 정확히 찾았습니다.", nameWorthJudging: true }
   }
   if (iou <= TYPE3.miss) {
     return {
       iou,
       verdict: "miss",
-      message: "다른 곳을 가리켰습니다. 이 표현 바로 앞 문장부터 다시 보세요.",
+      message: "선택한 곳이 다릅니다. 밑줄 바로 앞 문장부터 다시 살펴보세요.",
       nameWorthJudging: false,
     }
   }
@@ -86,8 +86,8 @@ export function checkSpan(input: Type3Input): Type3Free {
     iou,
     verdict: "partial",
     message: tooShort
-      ? "범위가 짧습니다. 나열이 어디서 시작하는지 다시 보세요."
-      : "범위가 넓습니다. 이 표현이 실제로 받는 데까지만 잡아 보세요.",
+      ? "선택 범위가 짧습니다. 설명이 어디서 시작하는지 다시 확인해 보세요."
+      : "선택 범위가 넓습니다. 이 표현이 실제로 가리키는 부분까지만 선택해 보세요.",
     nameWorthJudging: false,
   }
 }
@@ -116,7 +116,7 @@ export function finalizeType3(free: Type3Free, nameOk: boolean | null): Type3Fin
   if (free.verdict === "invalid" || free.verdict === "miss") {
     return {
       score: 0,
-      errorName: "되받는 범위를 못 찾음",
+      errorName: "가리키는 곳을 찾지 못함",
       message: free.message,
       parts: { span, name: null },
     }
@@ -124,7 +124,7 @@ export function finalizeType3(free: Type3Free, nameOk: boolean | null): Type3Fin
   if (free.verdict === "partial") {
     return {
       score: Math.round(60 * span),
-      errorName: "범위 경계가 어긋남",
+      errorName: "선택 범위가 어긋남",
       message: free.message,
       parts: { span, name: null },
     }
@@ -136,8 +136,8 @@ export function finalizeType3(free: Type3Free, nameOk: boolean | null): Type3Fin
   }
   return {
     score: nameOk ? 100 : 70,
-    errorName: nameOk ? null : "범위는 맞지만 이름이 어긋남",
-    message: nameOk ? free.message : "받는 곳은 맞았습니다. 그 내용을 담는 이름인지 다시 보세요.",
+    errorName: nameOk ? null : "범위는 맞지만 표현이 어긋남",
+    message: nameOk ? free.message : "가리키는 부분은 맞았습니다. 그 내용을 아우르는 표현인지 다시 확인해 보세요.",
     parts: { span, name: nameOk ? 1 : 0 },
   }
 }

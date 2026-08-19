@@ -244,7 +244,7 @@ describe("finalizeType2", () => {
     const r = finalizeType2(input, scoreType2(input), null)
     expect(r.score).toBe(0)
     expect(r.judged).toBe(false)
-    expect(r.errorName).toBe("구조를 바꾸지 않음")
+    expect(r.errorName).toBe("문장 구조 그대로")
   })
 
   it("판정을 못 받으면 통과도 실패도 시키지 않는다", () => {
@@ -258,7 +258,7 @@ describe("finalizeType2", () => {
     const input = { ...unfold, answer: "the process cannot be controlled" }
     const r = finalizeType2(input, scoreType2(input), v({ meaning: "reversed" }))
     expect(r.score).toBe(MEANING_SCORE.reversed)
-    expect(r.errorName).toBe("뜻은 맞는데 방향이 반대")
+    expect(r.errorName).toBe("뜻이 반대")
   })
 
   it("좁아진 답은 부분 점수를 받는다", () => {
@@ -275,7 +275,7 @@ describe("finalizeType2", () => {
     expect(scoreType2(input).structure).toBe("unclear")
     const r = finalizeType2(input, scoreType2(input), v({ form: "clause", meaning: "same" }))
     expect(r.score).toBe(0)
-    expect(r.errorName).toBe("구조를 바꾸지 않음")
+    expect(r.errorName).toBe("문장 구조 그대로")
   })
 
   it("구조 검사가 확신했으면 LLM 의 form 이 달라도 뒤집지 않는다", () => {

@@ -27,7 +27,7 @@ async function dragFirstSentence(page: Page) {
     sel?.addRange(range)
     host.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }))
   })
-  await expect(page.getByText(/표시한 범위/)).toBeVisible()
+  await expect(page.getByText(/선택한 부분/)).toBeVisible()
 }
 
 test("홈에서 아무 인증 없이 데모로 들어간다", async ({ page }) => {
@@ -57,6 +57,28 @@ test("지시문의 강조가 별표째 나오지 않는다", async ({ page }) =>
     await expect(prompt).not.toContainText("**")
     await expect(prompt.locator("b")).toHaveCount(1)
   }
+
+  // 채점 결과 문구에도 같은 강조가 들어간다. 예전에는 지시문에만 적용해서
+  // "이 표현은 **앞에 나온** 내용을 가리킵니다" 가 별표째 나갔다.
+  await page.getByRole("button", { name: /되받는 이름/ }).click()
+  await page.evaluate(() => {
+    const host = document.querySelector("main p.font-serif")!
+    const walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT)
+    let node: Node | null = null
+    let last: Node | null = null
+    while ((node = walker.nextNode())) last = node
+    const range = document.createRange()
+    range.setStart(last!, 0)
+    range.setEnd(last!, Math.min(25, last!.textContent!.length))
+    const sel = window.getSelection()
+    sel?.removeAllRanges()
+    sel?.addRange(range)
+    host.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }))
+  })
+  await page.getByRole("button", { name: "제출" }).click()
+  const result = page.getByTestId("demo-result")
+  await expect(result).toBeVisible({ timeout: 20_000 })
+  await expect(result).not.toContainText("**")
 })
 
 test("글자 크기를 화면에서 바꾸고, 다시 와도 그 크기를 기억한다", async ({ page }) => {
@@ -98,7 +120,7 @@ test("유형 1 — 원문 그대로 내면 무료 단계에서 걸린다 (LLM �
   await slot.fill(stimulus) // 원문 그대로
   await page.getByRole("button", { name: "제출" }).click()
 
-  await expect(page.getByText(/원문 단어/)).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByText(/원문에 있던 낱말|원문을 거의 그대로/)).toBeVisible({ timeout: 20_000 })
   // 모범답안은 점수와 상관없이 나온다(§38) — 가장 도움이 필요한 쪽이 빈손으로 끝나면 안 된다
   await expect(page.getByText("모범답안")).toBeVisible()
 })

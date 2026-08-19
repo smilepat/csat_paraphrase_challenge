@@ -90,19 +90,19 @@ describe("errorDistribution", () => {
   it("많은 순으로 주고 비율을 함께 낸다", () => {
     const rows = [
       a(1, "d1", 0, "지문 단어를 그대로 씀"),
-      a(2, "d1", 0, "구조를 바꾸지 않음"),
-      a(2, "d1", 0, "구조를 바꾸지 않음"),
+      a(2, "d1", 0, "문장 구조 그대로"),
+      a(2, "d1", 0, "문장 구조 그대로"),
       a(1, "d1", 100, null),
     ]
     const d = errorDistribution(rows)
-    expect(d[0].name).toBe("구조를 바꾸지 않음")
+    expect(d[0].name).toBe("문장 구조 그대로")
     expect(d[0].n).toBe(2)
     // 정답(null)은 분모에 넣지 않는다 — 오답의 구성비를 보는 표다
     expect(d[0].share).toBeCloseTo(2 / 3)
   })
 
   it("한 종에 몰리면 그것이 드러난다 — M12 의 실패 조건", () => {
-    const rows = Array.from({ length: 9 }, () => a(2, "d1", 0, "구조를 바꾸지 않음"))
+    const rows = Array.from({ length: 9 }, () => a(2, "d1", 0, "문장 구조 그대로"))
     rows.push(a(1, "d1", 0, "절반만 맞는 말"))
     expect(errorDistribution(rows)[0].share).toBeGreaterThan(0.8)
   })

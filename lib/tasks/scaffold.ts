@@ -106,7 +106,7 @@ export function scaffoldFor(
       frame: sentence.slice(0, at) + "{0}" + sentence.slice(at + target.length),
       slots: [
         {
-          hint: `“${target}” 를 같은 뜻의 다른 말로 (원문 ${n}단어 — 더 짧거나 길어도 됩니다)`,
+          hint: `“${target}” 를 같은 뜻의 다른 표현으로 (원문 ${n}낱말 — 더 짧거나 길어도 됩니다)`,
           source: target,
         },
       ],
@@ -121,7 +121,7 @@ export function scaffoldFor(
       frame: "the {0} of {1}",
       slots: [
         { hint: verb ? `“${verb}” 를 명사로 바꾼 말` : "핵심 동사를 명사로 바꾼 말", source: verb ?? undefined },
-        { hint: subject ? `무엇에 대한 것인지 (예: ${subject})` : "무엇에 대한 것인지", source: subject ?? undefined },
+        { hint: subject ? `무엇에 대한 것인지 (예: ${subject})` : "무엇에 대한 내용인지", source: subject ?? undefined },
       ],
     }
   }
@@ -135,7 +135,7 @@ export function scaffoldFor(
       slots: [
         { hint: comp ? `주어 (예: ${comp})` : "주어", source: comp ?? undefined },
         {
-          hint: head ? `“${head}” 를 동사·형용사로 푼 서술어` : "서술어 (동사를 세우세요)",
+          hint: head ? `“${head}” 를 동사·형용사로 푼 서술어` : "서술어 (동사로 시작)",
           source: head ?? undefined,
         },
       ],

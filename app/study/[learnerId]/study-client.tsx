@@ -1,25 +1,35 @@
-"use client"
+"use client";
 
-import { useCallback, useEffect, useState } from "react"
-import { nextTask, studyReport, submitAnswer, taskHint, type NextTask, type SubmitResult } from "@/app/actions/study"
-import type { HintStep } from "@/lib/tasks/hint"
-import { TaskContext } from "@/components/task-context"
-import { Emphasis } from "@/components/emphasis"
-import { answerToSubmit, fillScaffold } from "@/lib/tasks/scaffold"
+import { useCallback, useEffect, useState } from "react";
+import {
+  nextTask,
+  studyReport,
+  submitAnswer,
+  taskHint,
+  type NextTask,
+  type SubmitResult,
+} from "@/app/actions/study";
+import type { HintStep } from "@/lib/tasks/hint";
+import { TaskContext } from "@/components/task-context";
+import { Emphasis } from "@/components/emphasis";
+import { answerToSubmit, fillScaffold } from "@/lib/tasks/scaffold";
 
-type Report = Awaited<ReturnType<typeof studyReport>>
+type Report = Awaited<ReturnType<typeof studyReport>>;
 
 const AXIS_NAME: Record<number, string> = {
   1: "다른 낱말로",
   2: "이름↔문장",
   3: "되받는 이름",
-}
+};
 
 function AxisBars({ report }: { report: Report }) {
   return (
     <div className="grid grid-cols-3 gap-3">
       {report.profile.map((p) => (
-        <div key={p.axis} className="rounded-xl border border-[var(--color-line)] bg-white p-3">
+        <div
+          key={p.axis}
+          className="rounded-xl border border-[var(--color-line)] bg-white p-3"
+        >
           <div className="text-[11px] font-semibold text-[var(--color-muted)]">
             유형 {p.axis} · {AXIS_NAME[p.axis]}
           </div>
@@ -33,116 +43,134 @@ function AxisBars({ report }: { report: Report }) {
             />
           </div>
           <div className="mt-1 text-[11px] text-[var(--color-muted)]">
-            {p.n === 0 ? "아직 안 해봄" : `${p.n}회`}
-            {p.trend !== null && ` · ${p.trend > 0 ? "▲" : "▼"}${Math.abs(Math.round(p.trend))}`}
+            {p.n === 0 ? "아직 풀지 않음" : `${p.n}회`}
+            {p.trend !== null &&
+              ` · ${p.trend > 0 ? "▲" : "▼"}${Math.abs(Math.round(p.trend))}`}
           </div>
           {/* 도움 없이 낸 성적을 따로 보여 준다. 섞어 놓으면 실력이 부풀려지고,
               학생은 자기가 혼자 무엇을 할 수 있는지 끝내 모른다. */}
           {(() => {
-            const s = report.support?.find((x) => x.axis === p.axis)
-            if (!s || s.unaided.n + s.aided.n === 0) return null
+            const s = report.support?.find((x) => x.axis === p.axis);
+            if (!s || s.unaided.n + s.aided.n === 0) return null;
             return (
               <div className="mt-2 border-t border-[var(--color-line)] pt-1 text-[11px] leading-relaxed">
                 <div className="flex justify-between">
-                  <span className="text-[var(--color-muted)]">도움 없이</span>
+                  <span className="text-[var(--color-muted)]">힌트 없이</span>
                   <span className="font-semibold tabular-nums">
                     {s.unaided.mean === null ? "–" : Math.round(s.unaided.mean)}
-                    <span className="ml-1 font-normal text-[var(--color-muted)]">({s.unaided.n})</span>
+                    <span className="ml-1 font-normal text-[var(--color-muted)]">
+                      ({s.unaided.n})
+                    </span>
                   </span>
                 </div>
                 {s.aided.n > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-[var(--color-muted)]">도움 받고</span>
+                    <span className="text-[var(--color-muted)]">힌트 사용</span>
                     <span className="tabular-nums">
                       {s.aided.mean === null ? "–" : Math.round(s.aided.mean)}
-                      <span className="ml-1 text-[var(--color-muted)]">({s.aided.n})</span>
+                      <span className="ml-1 text-[var(--color-muted)]">
+                        ({s.aided.n})
+                      </span>
                     </span>
                   </div>
                 )}
               </div>
-            )
+            );
           })()}
         </div>
       ))}
     </div>
-  )
+  );
 }
 
 export default function StudyClient({ learnerId }: { learnerId: string }) {
-  const [item, setItem] = useState<NextTask>(null)
-  const [answer, setAnswer] = useState("")
-  const [span, setSpan] = useState<{ start: number; end: number } | null>(null)
-  const [result, setResult] = useState<SubmitResult | null>(null)
-  const [report, setReport] = useState<Report | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [item, setItem] = useState<NextTask>(null);
+  const [answer, setAnswer] = useState("");
+  const [span, setSpan] = useState<{ start: number; end: number } | null>(null);
+  const [result, setResult] = useState<SubmitResult | null>(null);
+  const [report, setReport] = useState<Report | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   // 힌트 사다리. steps 는 이 문항에서 열 수 있는 전부이고 shown 은 지금까지 연 칸 수다.
-  const [steps, setSteps] = useState<HintStep[]>([])
-  const [shown, setShown] = useState(0)
+  const [steps, setSteps] = useState<HintStep[]>([]);
+  const [shown, setShown] = useState(0);
   // 틀에 채운 값들. 틀이 없거나 학생이 직접 쓰기를 고르면 answer 를 쓴다.
-  const [slots, setSlots] = useState<string[]>([])
-  const [freeWrite, setFreeWrite] = useState(false)
+  const [slots, setSlots] = useState<string[]>([]);
+  const [freeWrite, setFreeWrite] = useState(false);
 
   const load = useCallback(async () => {
-    setBusy(true)
-    setError(null)
+    setBusy(true);
+    setError(null);
     try {
-      const [t, r] = await Promise.all([nextTask(learnerId), studyReport(learnerId)])
-      setItem(t)
-      setReport(r)
-      setAnswer("")
-      setSpan(null)
-      setResult(null)
-      setSteps([])
-      setShown(0)
-      setSlots([])
-      setFreeWrite(false)
+      const [t, r] = await Promise.all([
+        nextTask(learnerId),
+        studyReport(learnerId),
+      ]);
+      setItem(t);
+      setReport(r);
+      setAnswer("");
+      setSpan(null);
+      setResult(null);
+      setSteps([]);
+      setShown(0);
+      setSlots([]);
+      setFreeWrite(false);
     } catch (e) {
-      setError((e as Error).message)
+      setError((e as Error).message);
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
-  }, [learnerId])
+  }, [learnerId]);
 
   useEffect(() => {
-    void load()
-  }, [load])
+    void load();
+  }, [load]);
 
   async function onSubmit() {
-    if (!item) return
-    setBusy(true)
-    setError(null)
+    if (!item) return;
+    setBusy(true);
+    setError(null);
     try {
-      const r = await submitAnswer(learnerId, item.task.id, submitted, span ?? undefined, shown)
-      setResult(r)
-      setReport(await studyReport(learnerId))
+      const r = await submitAnswer(
+        learnerId,
+        item.task.id,
+        submitted,
+        span ?? undefined,
+        shown,
+      );
+      setResult(r);
+      setReport(await studyReport(learnerId));
     } catch (e) {
-      setError((e as Error).message)
+      setError((e as Error).message);
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
   }
 
-  const view = item?.task
-  const isSpanTask = view?.type === 3
-  const scaffold = !freeWrite && !isSpanTask ? (view?.scaffold ?? null) : null
+  const view = item?.task;
+  const isSpanTask = view?.type === 3;
+  const scaffold = !freeWrite && !isSpanTask ? (view?.scaffold ?? null) : null;
 
   // 틀을 쓰면 칸을 합쳐 **화면에 보여 줄** 답안을 만든다.
-  const composed = scaffold ? fillScaffold(scaffold.frame, slots) : answer
+  const composed = scaffold ? fillScaffold(scaffold.frame, slots) : answer;
   // 채점기에 보내는 것은 다르다 — 유형 1 은 문장이 아니라 **빈칸에 쓴 구**다.
   // 문장을 통째로 보내면 나머지에 남은 원문 단어가 "안 바꿨다" 로 잡힌다(§42).
-  const submitted = answerToSubmit(view?.type ?? 0, scaffold, slots, composed)
+  const submitted = answerToSubmit(view?.type ?? 0, scaffold, slots, composed);
   const canSubmit = isSpanTask
     ? span !== null
     : scaffold
       ? scaffold.slots.every((_, i) => (slots[i] ?? "").trim().length > 0)
-      : answer.trim().length > 0
+      : answer.trim().length > 0;
 
   return (
     <main className="mx-auto max-w-[640px] px-5 py-8">
       <header className="flex items-baseline justify-between">
         <h1 className="text-xl font-bold">오늘의 연습</h1>
-        {report && <span className="text-xs text-[var(--color-muted)]">누적 {report.total}회</span>}
+        {report && (
+          <span className="text-xs text-[var(--color-muted)]">
+            누적 {report.total}회
+          </span>
+        )}
       </header>
 
       {report && (
@@ -150,26 +178,32 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
           <AxisBars report={report} />
           {/* 지원 감소가 실제로 일어나는가. 표본이 짧으면 **아무 말도 하지 않는다** —
               없는 추세를 지어내면 학생이 그것을 믿는다. */}
-          {report.supportTrend?.delta !== null && report.supportTrend !== undefined && (
-            <p className="mt-2 text-center text-[11px] text-[var(--color-muted)]">
-              최근 {report.supportTrend.days}일 · 도움 없이 푼 비율{" "}
-              <span className="font-semibold text-[var(--color-ink)]">
-                {Math.round((report.supportTrend.unaidedShare ?? 0) * 100)}%
-              </span>
-              {report.supportTrend.delta! > 0.05 && " · 혼자 하는 쪽으로 가고 있습니다"}
-              {report.supportTrend.delta! < -0.05 && " · 요즘 도움을 더 쓰고 있습니다"}
-            </p>
-          )}
+          {report.supportTrend?.delta !== null &&
+            report.supportTrend !== undefined && (
+              <p className="mt-2 text-center text-[11px] text-[var(--color-muted)]">
+                최근 {report.supportTrend.days}일 · 힌트 없이 푼 비율{" "}
+                <span className="font-semibold text-[var(--color-ink)]">
+                  {Math.round((report.supportTrend.unaidedShare ?? 0) * 100)}%
+                </span>
+                {report.supportTrend.delta! > 0.05 &&
+                  " · 혼자 푸는 비율이 늘고 있습니다"}
+                {report.supportTrend.delta! < -0.05 &&
+                  " · 최근 힌트 사용이 늘었습니다"}
+              </p>
+            )}
         </div>
       )}
 
       {error && (
-        <p className="mt-4 rounded-xl bg-[#fef2f2] p-3 text-sm text-[var(--color-team-red)]">{error}</p>
+        <p className="mt-4 rounded-xl bg-[#fef2f2] p-3 text-sm text-[var(--color-team-red)]">
+          {error}
+        </p>
       )}
 
       {!view && !busy && (
         <p className="card mt-6 p-6 text-sm text-[var(--color-muted)]">
-          지금은 낼 문항이 없습니다. 선생님이 문항을 승인하면 이어서 할 수 있습니다.
+          지금은 풀 수 있는 문항이 없습니다. 선생님이 문항을 승인하면 이어서 풀
+          수 있습니다.
         </p>
       )}
 
@@ -179,7 +213,9 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
             <span className="rounded-full border border-[var(--color-brand)] px-2 py-0.5 text-[11px] font-bold text-[var(--color-brand)]">
               유형 {view.type} · {AXIS_NAME[view.type]}
             </span>
-            <span className="text-[11px] text-[var(--color-muted)]">{item.reason}</span>
+            <span className="text-[11px] text-[var(--color-muted)]">
+              {item.reason}
+            </span>
           </div>
 
           <p className="text-sm font-semibold">
@@ -197,7 +233,7 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
 
           {view.type === 1 && view.avoidWords.length > 0 && (
             <p className="text-xs text-[var(--color-muted)]">
-              다르게 표현할 단어:{" "}
+              다르게 표현할 낱말:{" "}
               <span className="font-semibold text-[var(--color-ink)]">
                 {view.avoidWords.join(" · ")}
               </span>
@@ -212,7 +248,9 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
                   “{view.context.slice(span.start, span.end).slice(0, 60)}…”
                 </span>
               ) : (
-                <span className="text-[var(--color-muted)]">문맥에서 끌어서 선택하세요</span>
+                <span className="text-[var(--color-muted)]">
+                  지문에서 드래그해 선택하세요
+                </span>
               )}
             </p>
           ) : scaffold ? (
@@ -220,9 +258,9 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
               {/* 틀을 그대로 보여 준다 — 어디에 무엇이 들어가는지가 먼저 보여야 한다 */}
               <p className="rounded-xl bg-white p-3 font-serif text-[1.02rem] leading-relaxed">
                 {scaffold.frame.split(/(\{\d+\})/).map((part, i) => {
-                  const m = part.match(/^\{(\d+)\}$/)
-                  if (!m) return <span key={i}>{part}</span>
-                  const idx = Number(m[1])
+                  const m = part.match(/^\{(\d+)\}$/);
+                  if (!m) return <span key={i}>{part}</span>;
+                  const idx = Number(m[1]);
                   return (
                     <span
                       key={i}
@@ -230,7 +268,7 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
                     >
                       {slots[idx]?.trim() || `(${idx + 1})`}
                     </span>
-                  )
+                  );
                 })}
               </p>
 
@@ -242,9 +280,9 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
                   <input
                     value={slots[i] ?? ""}
                     onChange={(e) => {
-                      const next = [...slots]
-                      next[i] = e.target.value
-                      setSlots(next)
+                      const next = [...slots];
+                      next[i] = e.target.value;
+                      setSlots(next);
                     }}
                     disabled={!!result}
                     className="mt-1 w-full rounded-xl border border-[var(--color-line)] p-2 font-serif disabled:bg-slate-50"
@@ -255,12 +293,12 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
               {!result && (
                 <button
                   onClick={() => {
-                    setAnswer(composed)
-                    setFreeWrite(true)
+                    setAnswer(composed);
+                    setFreeWrite(true);
                   }}
                   className="text-xs text-[var(--color-muted)] underline"
                 >
-                  틀 없이 직접 쓸게요
+                  빈칸 없이 직접 쓰기
                 </button>
               )}
             </div>
@@ -270,7 +308,7 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
               onChange={(e) => setAnswer(e.target.value)}
               rows={3}
               disabled={!!result}
-              placeholder="여기에 영어로 쓰세요"
+              placeholder="여기에 영어로 답을 쓰세요"
               className="w-full rounded-xl border border-[var(--color-line)] p-3 font-serif text-[1rem] disabled:bg-slate-50"
             />
           )}
@@ -281,7 +319,7 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
               className="rounded-xl border border-dashed border-[var(--color-brand)] bg-white p-3"
             >
               <p className="text-[11px] font-bold text-[var(--color-brand)]">
-                도움 {s.level}/{steps.length} · {s.label}
+                힌트 {s.level}/{steps.length} · {s.label}
               </p>
               <p className="mt-1 whitespace-pre-line text-sm">
                 <Emphasis text={s.body} />
@@ -302,15 +340,15 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
                 <button
                   onClick={async () => {
                     // 첫 요청에서만 서버를 부른다. 그 뒤로는 이미 받아 둔 칸을 하나씩 연다.
-                    const list = steps.length ? steps : await taskHint(view.id)
-                    if (!steps.length) setSteps(list)
-                    setShown((n) => Math.min(n + 1, list.length))
+                    const list = steps.length ? steps : await taskHint(view.id);
+                    if (!steps.length) setSteps(list);
+                    setShown((n) => Math.min(n + 1, list.length));
                   }}
                   className="w-full rounded-xl border border-[var(--color-line)] px-4 py-2 text-sm font-semibold text-[var(--color-muted)]"
                 >
                   {shown === 0
-                    ? "막혔어요 — 도움 받기"
-                    : `아직 어려워요 — 더 도와주세요 (${shown}/${steps.length})`}
+                    ? "잘 모르겠어요 · 힌트 보기"
+                    : `힌트 더 보기 (${shown}/${steps.length})`}
                 </button>
               )}
             </div>
@@ -318,21 +356,29 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
             <div className="space-y-3">
               <div
                 className={`rounded-xl p-4 ${
-                  result.score >= 70 ? "bg-[#f0fdf4]" : result.score > 0 ? "bg-[#fffbeb]" : "bg-[#fef2f2]"
+                  result.score >= 70
+                    ? "bg-[#f0fdf4]"
+                    : result.score > 0
+                      ? "bg-[#fffbeb]"
+                      : "bg-[#fef2f2]"
                 }`}
               >
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold tabular-nums">{result.score}</span>
+                  <span className="text-2xl font-bold tabular-nums">
+                    {result.score}
+                  </span>
                   {result.errorName && (
                     <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-bold">
                       {result.errorName}
                     </span>
                   )}
                 </div>
-                <p className="mt-2 text-sm">{result.message}</p>
+                <p className="mt-2 text-sm">
+                  <Emphasis text={result.message} />
+                </p>
                 {result.suggested && (
                   <p className="mt-2 font-serif text-sm text-[var(--color-muted)]">
-                    이 답을 고친다면: {result.suggested}
+                    이렇게 고쳐 쓸 수 있습니다: {result.suggested}
                   </p>
                 )}
                 {/* 모범답안은 **점수와 상관없이** 나온다. 예전에는 판정이 있을 때만
@@ -340,16 +386,21 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
                     가장 도움이 필요한 학생이 아무것도 못 받았다. */}
                 {result.model && (
                   <div className="mt-3 rounded-lg bg-white p-2">
-                    <p className="text-[11px] font-bold text-[var(--color-brand)]">모범답안</p>
+                    <p className="text-[11px] font-bold text-[var(--color-brand)]">
+                      모범답안
+                    </p>
                     <p className="mt-1 font-serif text-sm">{result.model}</p>
                     <p className="mt-1 text-[11px] text-[var(--color-muted)]">
-                      정답은 하나가 아닙니다. 이 답과 내 답이 어디서 갈렸는지 견줘 보세요.
+                      정답은 하나가 아닙니다. 내가 쓴 답과 무엇이 다른지 비교해
+                      보세요.
                     </p>
                   </div>
                 )}
                 {result.gold && (
                   <div className="mt-3 rounded-lg bg-white p-2">
-                    <p className="text-[11px] font-bold text-[var(--color-good)]">수능 정답 쌍</p>
+                    <p className="text-[11px] font-bold text-[var(--color-good)]">
+                      수능 정답 쌍
+                    </p>
                     <p className="mt-1 font-serif text-sm">{result.gold}</p>
                   </div>
                 )}
@@ -367,7 +418,7 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
 
       {report && report.errors.length > 0 && (
         <section className="mt-6">
-          <h2 className="text-sm font-bold">자주 나오는 오답</h2>
+          <h2 className="text-sm font-bold">자주 나오는 실수</h2>
           <ul className="mt-2 space-y-1">
             {report.errors.slice(0, 4).map((e) => (
               <li key={e.name} className="flex justify-between text-sm">
@@ -381,5 +432,5 @@ export default function StudyClient({ learnerId }: { learnerId: string }) {
         </section>
       )}
     </main>
-  )
+  );
 }

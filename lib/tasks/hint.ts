@@ -104,7 +104,7 @@ function strategyHint(
     // 정형 판별은 "often vary" 같은 것을 놓치므로 마지막 폴백으로만 둔다.
     const cue = formBase(material.form) ?? firstVerbLike(stimulus) ?? findFiniteVerb(stimulus).cue
     const subject = roughSubject(stimulus)
-    if (!cue) return "문장의 동사를 찾아 명사로 바꾸는 데서 시작해 보세요."
+    if (!cue) return "문장의 동사를 찾아 명사로 바꾸는 것부터 시작해 보세요."
     return (
       `핵심 동사는 “${cue}” 입니다. 이 동사를 **명사**로 바꾸고, ` +
       (subject ? `“${subject}” 을(를) of 뒤에 붙여 보세요.` : "무엇에 대한 것인지를 of 뒤에 붙여 보세요.") +
@@ -114,20 +114,20 @@ function strategyHint(
   if (type === 2 && direction === "unfold") {
     // 펴기도 같은 정본을 쓴다. "centrality → central" 의 왼쪽이 머리 낱말이다.
     const head = formBase(material.form) ?? headNoun(stimulus)
-    if (!head) return "이 명사구를 누가·무엇이 어떻게 하는지로 풀어 보세요."
+    if (!head) return "이 명사구를 「누가 무엇을 한다」는 문장으로 바꿔 보세요."
     return (
-      `머리 단어는 “${head}” 입니다. 이 단어를 **동사나 형용사로 풀고**, ` +
+      `핵심 낱말은 “${head}” 입니다. 이 낱말을 **동사나 형용사로 바꾸고**, ` +
       `주어를 세워 문장으로 만들어 보세요.  예: how … is / can be …`
     )
   }
   if (type === 1) {
     const first = avoidWords[0]
     return first
-      ? `한 번에 다 바꾸지 않아도 됩니다. “${first}” 하나만 다른 말로 바꾸는 것부터 해 보세요.`
-      : "핵심 단어 하나만 다른 말로 바꾸는 것부터 해 보세요."
+      ? `한 번에 다 바꾸지 않아도 됩니다. “${first}” 하나만 다른 표현으로 바꾸는 것부터 해 보세요.`
+      : "핵심 낱말 하나만 다른 표현으로 바꾸는 것부터 해 보세요."
   }
   if (type === 3) {
-    return "되받는 표현 **바로 앞 문장**부터 보세요. 대개 거기서 나열이나 설명이 끝납니다."
+    return "가리키는 표현 **바로 앞 문장**부터 살펴보세요. 대개 그 앞에서 설명이 끝납니다."
   }
   return ""
 }
@@ -151,34 +151,34 @@ export function hintSteps(
   if (m.gloss) {
     steps.push({
       level: 0,
-      label: "무슨 뜻인가요",
-      body: `“${m.gloss}” 라는 뜻입니다. 이 내용을 **영어로 다시 말해** 보세요.`,
+      label: "우리말 뜻",
+      body: `“${m.gloss}” 라는 뜻입니다. 이 내용을 **영어로 다시 표현해** 보세요.`,
     })
   }
 
   const strategy = strategyHint(type, direction, stimulus, avoidWords, m)
-  if (strategy) steps.push({ level: 0, label: "어떻게 시작하나요", body: strategy })
+  if (strategy) steps.push({ level: 0, label: "푸는 방법", body: strategy })
 
   if (type === 1 && m.shape) {
     steps.push({
       level: 0,
-      label: "이런 모양입니다",
-      body: `한 가지 가능한 답의 모양입니다 — ${m.shape}\n첫 글자만 보고 떠올려 보세요. 다른 답도 맞을 수 있습니다.`,
+      label: "답의 형태",
+      body: `가능한 답의 형태입니다 — ${m.shape}\n첫 글자를 단서로 떠올려 보세요. 다른 답도 정답이 될 수 있습니다.`,
     })
   }
   if (type === 2 && m.form) {
     steps.push({
       level: 0,
-      label: "낱말 모양 바꾸기",
-      body: `${m.form}\n이 어형 변화를 쓰면 나머지는 조립만 하면 됩니다.`,
+      label: "품사 바꾸기",
+      body: `${m.form}\n이렇게 품사를 바꾸면 나머지는 이어 붙이면 됩니다.`,
     })
   }
 
   if (m.example) {
     steps.push({
       level: 0,
-      label: "예시 답",
-      body: `${m.example}\n**정답이 아니라 가능한 답 하나**입니다. 읽고 나서 자기 말로 다시 써 보세요.`,
+      label: "예시 답안",
+      body: `${m.example}\n**유일한 정답이 아니라 답안 예시 하나**입니다. 읽은 뒤 자기 표현으로 다시 써 보세요.`,
     })
   }
 

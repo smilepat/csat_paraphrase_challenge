@@ -20,20 +20,20 @@ const TEMPLATE: Record<Type2Meaning, { praise: string; tip: string }> = {
     tip: "",
   },
   narrower: {
-    praise: "적절한 내용이지만 부분적인 답입니다.",
+    praise: "맞는 내용이지만 일부만 담았습니다.",
     tip: "원문에서 빠진 내용을 한 가지만 더 넣어 보세요.",
   },
   broader: {
     praise: "방향은 맞습니다.",
-    tip: "원문보다 넓게 말했습니다. some·may·often 같은 한정어를 살려 보세요.",
+    tip: "원문보다 뜻이 넓어졌습니다. some·may·often 같은 한정어를 살려 보세요.",
   },
   changed: {
-    praise: "다른 표현으로 바꾸려 한 시도는 좋습니다.",
-    tip: "다만 원문에 없는 내용이 들어갔습니다. 원문의 핵심어 하나를 다시 확인해 보세요.",
+    praise: "다른 표현으로 바꾸려 한 시도가 좋습니다.",
+    tip: "다만 원문에 없는 내용이 들어갔습니다. 원문의 핵심 낱말 하나를 다시 확인해 보세요.",
   },
   reversed: {
-    praise: "표현을 바꾸는 것 자체는 잘했습니다.",
-    tip: "다만 뜻이 반대가 됐습니다. 긍정·부정과 방향을 다시 확인해 보세요.",
+    praise: "표현을 바꾼 것은 잘했습니다.",
+    tip: "다만 뜻이 반대가 되었습니다. 긍정·부정 표현을 다시 확인해 보세요.",
   },
 }
 
@@ -54,14 +54,14 @@ export function meaningFeedback(meaning: Type2Meaning, llmTip?: string): string 
 
 /** 무료 단계에서 떨어진 유형 1 — 아직 아무것도 안 바꾼 경우. */
 export function notRewordedFeedback(reused: string[]): string {
-  const head = "원문을 읽고 자리를 정확히 찾았습니다."
-  if (reused.length === 0) return `${head} 이제 자기 말로 바꿔 보세요.`
-  return `${head} ${reused.slice(0, 3).join(", ")} 은(는) 아직 원문 그대로입니다 — 이 중 하나만 먼저 바꿔 보세요.`
+  const head = "원문의 내용은 잘 파악했습니다."
+  if (reused.length === 0) return `${head} 이제 자기 표현으로 바꿔 보세요.`
+  return `${head} ${reused.slice(0, 3).join(", ")} 은(는) 원문에 있던 낱말입니다 — 이 중 하나만 먼저 바꿔 보세요.`
 }
 
 /** 유형 2 에서 구조를 아직 못 바꾼 경우. */
 export function structureFeedback(target: "noun_phrase" | "clause", cue: string | null): string {
   return target === "noun_phrase"
-    ? `뜻은 잘 담았습니다. 이제 "${cue ?? "동사"}" 를 명사로 바꿔 한 덩어리로 묶어 보세요.`
-    : "뜻은 잘 담았습니다. 이제 주어와 동사를 세워 문장으로 풀어 보세요."
+    ? `뜻은 잘 담았습니다. 이제 "${cue ?? "동사"}" 를 명사로 바꿔 명사구 하나로 만들어 보세요.`
+    : "뜻은 잘 담았습니다. 이제 주어와 동사를 갖춘 문장으로 바꿔 보세요."
 }

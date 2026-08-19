@@ -4,7 +4,7 @@ import { meaningFeedback, notRewordedFeedback, structureFeedback } from "../feed
 describe("meaningFeedback — 인정 + 팁", () => {
   it("잘한 점을 먼저 말하고 그다음 무엇을 할지 말한다", () => {
     const m = meaningFeedback("narrower")
-    expect(m).toContain("적절한 내용이지만")   // 인정
+    expect(m).toContain("맞는 내용이지만")   // 인정
     expect(m).toContain("보세요")               // 행동 지시
   })
 
@@ -19,7 +19,7 @@ describe("meaningFeedback — 인정 + 팁", () => {
 
   it("판정이 준 구체적 조언은 팁 자리에 들어간다", () => {
     const m = meaningFeedback("changed", "핵심어 'memories' 를 다시 확인해 보세요.")
-    expect(m).toContain("시도는 좋습니다")       // 인정은 유지
+    expect(m).toContain("시도가 좋습니다")       // 인정은 유지
     expect(m).toContain("memories")              // 구체적 조언이 살아 있다
   })
 
@@ -32,7 +32,7 @@ describe("meaningFeedback — 인정 + 팁", () => {
 
   it("뒤집힌 답에도 잘한 점을 먼저 말한다", () => {
     const m = meaningFeedback("reversed")
-    expect(m.startsWith("표현을 바꾸는 것 자체는")).toBe(true)
+    expect(m.startsWith("표현을 바꾼 것은")).toBe(true)
   })
 })
 
@@ -44,7 +44,7 @@ describe("notRewordedFeedback", () => {
   })
 
   it("아무것도 안 썼을 때도 비난하지 않는다", () => {
-    expect(notRewordedFeedback([])).toContain("정확히 찾았습니다")
+    expect(notRewordedFeedback([])).toContain("잘 파악했습니다")
   })
 })
 
