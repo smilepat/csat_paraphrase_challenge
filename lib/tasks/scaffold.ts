@@ -81,6 +81,48 @@ function roughSubject(sentence: string): string | null {
 const AUXILIARY_TAIL =
   /\s+(?:can|could|may|might|will|would|shall|should|must|is|are|was|were|has|have|had|do|does|did)$/i
 
+/**
+ * 주어 자리를 **예시로 보여 줄 수 있을 때만** 돌려준다. 확신이 없으면 null 이고,
+ * 그러면 화면은 예시 없이 "무엇에 대한 내용인지" 만 말한다.
+ *
+ * 왜 이렇게까지 하는가: 이 칸은 학생에게 **예시**로 나간다. 틀린 예시는 없는 것만
+ * 못하다(§41 ②). 승인된 묶기 67건을 훑어 보니 세 종류가 섞여 있었다:
+ *
+ *   줄바꿈  "Social↵and"        지문의 줄바꿈이 그대로 딸려왔다 (5건)
+ *   주어 아님 "Without them"     전치사·접속사로 시작한다 (9건)
+ *   동사 섞임 "People vary"      주어 뒤 동사까지 물고 왔다 (6건)
+ *
+ * 동사 자르기에는 **한정사가 있느냐**가 갈림길이다.
+ *
+ *   "The class improves"  한정사가 있으니 그 뒤 한 낱말이 머리 명사다 → 안전하게 자른다
+ *   "Some studies"        한정사가 없으면 둘째 낱말이 명사인지 동사인지 알 수 없다.
+ *                         studies·changes 는 둘 다 되고, 잘못 자르면 "Some" 만 남는다.
+ *                         → **예시를 아예 주지 않는다.** 애매할 때 지어내지 않는 쪽이 낫다.
+ *
+ * 이 규칙으로 승인 67건에서 줄바꿈·주어 아님이 0 이 되고, 맞는 예시 4건을 잃는다.
+ * 예시를 잃어도 칸 안내("무엇에 대한 내용인지")는 그대로 나가므로 학생은 할 일을 안다.
+ */
+const NOT_SUBJECT_HEAD =
+  /^(if|when|while|because|although|though|unless|without|with|by|through|for|even|and|but|as|in|on|at|after|before|since|to|from|about|during|despite)\b/i
+
+/** 한정사로 시작하면 그 뒤 한 낱말이 머리 명사다 — 둘째 낱말을 동사로 오해할 일이 없다. */
+const DETERMINER_HEAD = /^(the|a|an|this|these|those|his|her|their|our|its)\s/i
+
+export function subjectExample(sentence: string): string | null {
+  const raw = roughSubject(sentence)
+  if (!raw) return null
+  const flat = raw.replace(/\s+/g, " ").trim()
+  if (!flat || NOT_SUBJECT_HEAD.test(flat)) return null
+
+  // 한정사가 있으면 roughSubject 가 이미 그 뒤 **한 낱말**만 남긴다("The changes").
+  // 거기에는 동사가 낄 자리가 없으므로 자르지 않는다 — 자르면 "The" 만 남는다.
+  if (DETERMINER_HEAD.test(flat)) return flat
+
+  // 한정사가 없으면 둘째 낱말이 명사인지 동사인지 가릴 수 없다("Some studies" vs
+  // "People vary"). 둘 중 하나를 골라 틀리느니 예시를 주지 않는다.
+  return findFiniteVerb(flat).finite ? null : flat
+}
+
 export function scaffoldFor(
   type: number,
   direction: string | null,
@@ -116,12 +158,15 @@ export function scaffoldFor(
   // ── 유형 2 묶기 : the (명사) of (대상) ────────────────────
   if (type === 2 && direction === "fold") {
     const verb = firstVerbLike(stimulus) ?? findFiniteVerb(stimulus).cue
-    const subject = roughSubject(stimulus)
+    const subject = subjectExample(stimulus)
     return {
       frame: "the {0} of {1}",
       slots: [
         { hint: verb ? `“${verb}” 를 명사로 바꾼 말` : "핵심 동사를 명사로 바꾼 말", source: verb ?? undefined },
-        { hint: subject ? `무엇에 대한 것인지 (예: ${subject})` : "무엇에 대한 내용인지", source: subject ?? undefined },
+        {
+          hint: subject ? `무엇에 대한 내용인지 (예: ${subject})` : "무엇에 대한 내용인지",
+          source: subject ?? undefined,
+        },
       ],
     }
   }
