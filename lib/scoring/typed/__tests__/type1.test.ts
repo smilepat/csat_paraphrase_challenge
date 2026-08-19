@@ -87,7 +87,7 @@ describe("finalizeType1 — 의미 × 회피", () => {
     // 그게 학생이 가장 많이 하는 실패이므로 반드시 곱이어야 한다.
     const r = finalizeType1(freeOf(good), v({ meaning: "changed" }))
     expect(r.score).toBeLessThan(40)
-    expect(r.errorName).toBe("비슷하지만 다른 말")
+    expect(r.errorName).toBe("뜻이 달라짐")
   })
 
   it("뒤집힌 답은 회피가 완벽해도 0 이다", () => {
@@ -113,14 +113,14 @@ describe("finalizeType1 — 의미 × 회피", () => {
     const r = finalizeType1(freeOf(base.stimulus), null)
     expect(r.score).toBe(0)
     expect(r.judged).toBe(false)
-    expect(r.errorName).toBe("원문 단어를 아직 안 바꿈")
+    expect(r.errorName).toBe("원문 표현 그대로")
   })
 
   it("어간은 피했지만 판정이 '옮긴 것'으로 보면 0 이다", () => {
     // 무료 검사는 어간만 본다. 동의어를 그대로 옮긴 수준은 판정이 잡는다.
     const r = finalizeType1(freeOf(good), v({ reworded: false }))
     expect(r.score).toBe(0)
-    expect(r.errorName).toBe("원문 단어를 아직 안 바꿈")
+    expect(r.errorName).toBe("원문 표현 그대로")
   })
 
   it("판정을 못 받으면 통과도 실패도 시키지 않는다", () => {

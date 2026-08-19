@@ -108,11 +108,11 @@ export const MEANING_SCORE = {
 } as const
 
 export const MEANING_LABEL = {
-  same: "뜻이 같다",
-  narrower: "절반만 맞는 말",
-  broader: "원문보다 크게 말한 것",
-  changed: "비슷하지만 다른 말",
-  reversed: "뜻은 맞는데 방향이 반대",
+  same: "뜻이 같음",
+  narrower: "내용 일부 빠짐",
+  broader: "원문보다 넓은 뜻",
+  changed: "뜻이 달라짐",
+  reversed: "뜻이 반대",
 } as const
 
 export type Type2Final = {
@@ -146,7 +146,7 @@ export function finalizeType2(
   if (structure.structure === "fail") {
     return {
       score: TYPE2.structureFailScore,
-      errorName: "구조를 바꾸지 않음",
+      errorName: "문장 구조 그대로",
       message: structure.message,
       suggested: "",
       judged: false,
@@ -159,7 +159,7 @@ export function finalizeType2(
     return {
       score: 50,
       errorName: null,
-      message: "구조는 맞았습니다. 의미 확인은 잠시 뒤에 다시 시도합니다.",
+      message: "구조는 맞았습니다. 지금은 뜻까지 확인하지 못했으니 잠시 뒤 다시 제출해 보세요.",
       suggested: "",
       judged: false,
       flags: [...flags, "verdict-missing"],
@@ -170,7 +170,7 @@ export function finalizeType2(
   if (structure.structure === "unclear" && verdict.form !== input.target) {
     return {
       score: TYPE2.structureFailScore,
-      errorName: "구조를 바꾸지 않음",
+      errorName: "문장 구조 그대로",
       message: structureFeedback(input.target, structure.cue),
       suggested: verdict.suggested,
       judged: true,

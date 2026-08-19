@@ -60,7 +60,7 @@ describe("finalizeType3", () => {
     const f = finalizeType3(free, null)
     expect(f.score).toBeGreaterThan(0)
     expect(f.score).toBeLessThan(100)
-    expect(f.errorName).toBe("범위 경계가 어긋남")
+    expect(f.errorName).toBe("선택 범위가 어긋남")
   })
 
   it("범위가 맞고 이름 판정이 없으면 범위만으로 만점", () => {
@@ -72,7 +72,7 @@ describe("finalizeType3", () => {
     const free = checkSpan({ answer: GOLD, gold: GOLD, stimulusStart: STIM })
     const f = finalizeType3(free, false)
     expect(f.score).toBe(70)
-    expect(f.errorName).toContain("이름")
+    expect(f.errorName).toContain("표현")
   })
 })
 

@@ -58,7 +58,7 @@ async function answerCurrent(page: import("@playwright/test").Page) {
       sel?.addRange(range)
       host.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }))
     })
-    await expect(page.getByText(/표시한 범위/)).toBeVisible()
+    await expect(page.getByText(/선택한 부분|선택한 범위/)).toBeVisible()
   }
 
   await page.getByRole("button", { name: "제출" }).click()
@@ -75,7 +75,7 @@ test("입장하면 문항이 나오고 3축이 보인다", async ({ page }) => {
   await expect(axes.getByText("유형 3 · 되받는 이름")).toBeVisible()
 
   // 아직 아무것도 안 했으니 세 축 모두 "아직 안 해봄"
-  await expect(page.getByText("아직 안 해봄").first()).toBeVisible()
+  await expect(page.getByText("아직 풀지 않음").first()).toBeVisible()
 
   // 문항이 하나 나온다
   await expect(page.getByText("제출")).toBeVisible()
@@ -136,7 +136,7 @@ test("도움 없이 낸 성적을 따로 보여 준다", async ({ page }) => {
   await expect(page.getByRole("button", { name: "제출" })).toBeVisible({ timeout: 20_000 })
 
   // 아직 아무것도 안 냈으면 갈라 보여 줄 것이 없다
-  await expect(page.getByText("도움 없이")).toHaveCount(0)
+  await expect(page.getByText("힌트 없이")).toHaveCount(0)
 
   // ① 도움을 받지 않고 한 번 낸다
   await answerCurrent(page)
@@ -144,18 +144,18 @@ test("도움 없이 낸 성적을 따로 보여 준다", async ({ page }) => {
   await expect(page.getByText(/누적 1회/)).toBeVisible()
 
   // 무도움 시도가 생겼으니 그 칸이 나와야 한다
-  await expect(page.getByText("도움 없이").first()).toBeVisible()
-  await expect(page.getByText("도움 받고")).toHaveCount(0)
+  await expect(page.getByText("힌트 없이").first()).toBeVisible()
+  await expect(page.getByText("힌트 사용")).toHaveCount(0)
 
   // ② 이번에는 도움을 열고 낸다
   await expect(page.getByRole("button", { name: "제출" })).toBeVisible({ timeout: 20_000 })
-  await page.getByRole("button", { name: /막혔어요/ }).click()
-  await expect(page.getByText(/도움 1\//)).toBeVisible()
+  await page.getByRole("button", { name: /잘 모르겠어요/ }).click()
+  await expect(page.getByText(/힌트 1\//)).toBeVisible()
   await answerCurrent(page)
   await page.getByRole("button", { name: "다음 문항" }).click()
 
   // 두 성적이 **갈려서** 보여야 한다. 섞으면 실력이 부풀려진다.
-  await expect(page.getByText("도움 받고").first()).toBeVisible()
+  await expect(page.getByText("힌트 사용").first()).toBeVisible()
 })
 
 test("빈 답으로는 제출할 수 없다", async ({ page }) => {
@@ -186,10 +186,10 @@ test("힌트는 한 칸씩 열린다 — 답은 마지막에만 나온다", asyn
   await expect(page.getByRole("button", { name: "제출" })).toBeVisible({ timeout: 20_000 })
 
   // 힌트는 **요청해야** 나온다. 문항과 함께 보이면 산출을 시도하기 전에 읽는다.
-  await expect(page.getByText(/도움 \d+\//)).toHaveCount(0)
+  await expect(page.getByText(/힌트 \d+\//)).toHaveCount(0)
 
-  await page.getByRole("button", { name: /막혔어요/ }).click()
-  const first = page.getByText(/도움 1\//)
+  await page.getByRole("button", { name: /잘 모르겠어요/ }).click()
+  const first = page.getByText(/힌트 1\//)
   await expect(first).toBeVisible()
 
   // 첫 칸은 한국어 뜻이다. 여기서 영어 답이 나오면 사다리가 무너진 것이다.
@@ -198,16 +198,16 @@ test("힌트는 한 칸씩 열린다 — 답은 마지막에만 나온다", asyn
   await expect(opened.first()).toContainText("뜻")
 
   // 총 칸 수를 읽어 끝까지 연다
-  const total = Number((await first.innerText()).match(/도움 1\/(\d+)/)![1])
+  const total = Number((await first.innerText()).match(/힌트 1\/(\d+)/)![1])
   expect(total, "픽스처에 힌트 재료가 없으면 이 검사는 아무것도 안 본다").toBeGreaterThan(1)
 
   for (let n = 1; n < total; n++) {
-    await page.getByRole("button", { name: /더 도와주세요/ }).click()
+    await page.getByRole("button", { name: /힌트 더 보기/ }).click()
     await expect(opened).toHaveCount(n + 1)
   }
 
   // 다 열면 버튼이 사라진다
-  await expect(page.getByRole("button", { name: /막혔어요|더 도와주세요/ })).toHaveCount(0)
+  await expect(page.getByRole("button", { name: /잘 모르겠어요|힌트 더 보기/ })).toHaveCount(0)
 
   // 앞 칸들은 답을 담지 않고, 마지막 칸에서만 예시 답이 나온다
   await expect(opened.last()).toContainText("예시 답")
@@ -233,6 +233,6 @@ test("백지 대신 빈칸이 든 틀을 준다", async ({ page }) => {
   await expect(page.getByRole("button", { name: "제출" })).toBeEnabled()
 
   // 틀 없이 쓰겠다고 하면 자유 입력으로 바뀐다
-  await page.getByRole("button", { name: /틀 없이 직접/ }).click()
+  await page.getByRole("button", { name: /빈칸 없이 직접/ }).click()
   await expect(page.locator("textarea")).toBeVisible()
 })

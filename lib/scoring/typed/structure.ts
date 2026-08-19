@@ -301,7 +301,7 @@ export function checkStructure(
   return {
     verdict: "fail",
     cue,
-    message: `아직 문장입니다 — "${cue}" 가 남아 있습니다. 동사를 지우고 이름 하나로 접어 보세요.`,
+    message: `아직 문장입니다 — 동사 "${cue}" 가 남아 있습니다. 이 동사를 명사로 바꿔 명사구 하나로 만들어 보세요.`,
   }
 }
 

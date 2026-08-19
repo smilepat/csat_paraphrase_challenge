@@ -55,10 +55,10 @@ describe("힌트 사다리", () => {
   it("뜻 → 전략 → 어형 → 예시 순서로 열린다", () => {
     const s = hintSteps(2, "fold", stim, [], material)
     expect(s.map((x) => x.label)).toEqual([
-      "무슨 뜻인가요",
-      "어떻게 시작하나요",
-      "낱말 모양 바꾸기",
-      "예시 답",
+      "우리말 뜻",
+      "푸는 방법",
+      "품사 바꾸기",
+      "예시 답안",
     ])
     expect(s.map((x) => x.level)).toEqual([1, 2, 3, 4])
   })
@@ -82,7 +82,7 @@ describe("힌트 사다리", () => {
 
   it("재료가 없는 칸은 아예 만들지 않는다 — 빈 칸은 고장으로 보인다", () => {
     const s = hintSteps(2, "fold", stim, [], { gloss: "성분이 달라진다" })
-    expect(s.map((x) => x.label)).toEqual(["무슨 뜻인가요", "어떻게 시작하나요"])
+    expect(s.map((x) => x.label)).toEqual(["우리말 뜻", "푸는 방법"])
     // level 은 배열 위치다. 재료가 빠져도 1,2 로 이어져야 한다
     expect(s.map((x) => x.level)).toEqual([1, 2])
   })
@@ -94,10 +94,10 @@ describe("힌트 사다리", () => {
       example: "skilled experts",
     })
     expect(s.map((x) => x.label)).toEqual([
-      "무슨 뜻인가요",
-      "어떻게 시작하나요",
-      "이런 모양입니다",
-      "예시 답",
+      "우리말 뜻",
+      "푸는 방법",
+      "답의 형태",
+      "예시 답안",
     ])
     // 모양 칸은 첫 글자만 준다 — 낱말이 통째로 보이면 예시 칸과 다를 게 없다
     expect(s[2]!.body).not.toContain("skilled experts")
@@ -115,7 +115,7 @@ describe("힌트 사다리", () => {
       [],
       { gloss: "모든 것을 바꾸는 것처럼 보이는 것", form: "change → alteration", example: "the apparent alteration of everything" },
     )
-    const strategy = s.find((x) => x.label === "어떻게 시작하나요")!.body
+    const strategy = s.find((x) => x.label === "푸는 방법")!.body
     expect(strategy).toContain("change")
     expect(strategy, "문장에서 먼저 보이는 동사를 짚으면 3칸과 어긋난다").not.toContain("fall")
   })
@@ -126,18 +126,18 @@ describe("힌트 사다리", () => {
       form: "centrality → central",
       example: "this way of thought is central",
     })
-    expect(s.find((x) => x.label === "어떻게 시작하나요")!.body).toContain("centrality")
+    expect(s.find((x) => x.label === "푸는 방법")!.body).toContain("centrality")
   })
 
   it("재료가 없으면 예전처럼 문장에서 찾는다 — 침묵하지 않는다", () => {
     const s = hintSteps(2, "fold", "natural ingredients often vary in their composition", [], {
       gloss: "성분이 크게 달라진다",
     })
-    expect(s.find((x) => x.label === "어떻게 시작하나요")!.body).toContain("vary")
+    expect(s.find((x) => x.label === "푸는 방법")!.body).toContain("vary")
   })
 
   it("유형 3 은 산출이 없으므로 예시 칸도 없다", () => {
     const s = hintSteps(3, "span", "These variations", [], { gloss: "앞의 여러 차이" })
-    expect(s.map((x) => x.label)).toEqual(["무슨 뜻인가요", "어떻게 시작하나요"])
+    expect(s.map((x) => x.label)).toEqual(["우리말 뜻", "푸는 방법"])
   })
 })
