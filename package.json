@@ -31,6 +31,7 @@
     "tasks:sync": "vite-node scripts/sync-approvals.mjs",
     "tasks:pull": "vite-node scripts/pull-tasks.mjs",
     "tasks:restore-queue": "vite-node scripts/restore-review-queue.mjs",
+    "tasks:rename-errors": "vite-node scripts/migrate-error-names.mjs",
     "tasks:gold": "vite-node scripts/seed-gold-pairs.mjs",
     "tasks:audit1": "vite-node scripts/audit-type1.mjs",
     "tasks:recheck1": "vite-node scripts/recheck-type1.mjs",
