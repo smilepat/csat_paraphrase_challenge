@@ -22,7 +22,7 @@
 import { createClient } from "@libsql/client"
 import { loadEnv } from "./_shared.mjs"
 import { scoreType2 } from "../lib/scoring/typed/type2.ts"
-import { checkAvoidance, avoidanceScore } from "../lib/scoring/typed/type1.ts"
+import { checkAvoidance, avoidanceFactor } from "../lib/scoring/typed/type1.ts"
 import { checkSpan, finalizeType3 } from "../lib/scoring/typed/type3.ts"
 import { threeAxisProfile, axisSeparation, weakestAxis } from "../lib/learners/history.ts"
 
@@ -130,8 +130,10 @@ for (const [name, skill] of Object.entries(PERSONAS)) {
       })
       rows.push({
         persona: name, type: 1, day,
-        score: free1.fail ? 0 : Math.round(avoidanceScore(free1.avoidance) * 100),
-        errorName: free1.fail ? "원문 단어를 아직 안 바꿈" : null,
+        // 채점기와 같은 계수를 쓴다 — 시뮬레이터가 옛 방식을 들고 있으면
+        // 킬 기준이 배포된 채점과 다른 세상을 재게 된다(§36 과 같은 실패).
+        score: free1.fail ? 0 : Math.round(avoidanceFactor(free1.reused.length) * 100),
+        errorName: free1.fail ? "원문 표현 그대로" : null,
       })
 
       // 유형 2

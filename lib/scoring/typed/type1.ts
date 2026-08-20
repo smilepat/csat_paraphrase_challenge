@@ -100,6 +100,36 @@ export function avoidanceScore(avoidance: number): number {
   return (avoidance - lo) / (hi - lo)
 }
 
+/**
+ * 남긴 낱말 **개수**로 매기는 계수. 비율이 아니라 개수인 것이 요점이다.
+ *
+ * 왜 바꿨나: 비율로 재면 목록이 짧을수록 낱말 하나가 무거워진다. 승인된 유형 1
+ * **181건 중 149건(82%)이 피할 낱말 2개**라, 뜻을 정확히 옮기고 낱말 하나만
+ * 남긴 답이 **35점**을 받고 있었다. 3개짜리 문항이면 같은 답이 71점이다 —
+ * 학생이 한 일은 같은데 점수가 문항 사정에 따라 갈렸다.
+ *
+ * 이 앱은 판정보다 **학습을 권한다.** 그래서:
+ *   ① 뜻이 맞았으면 점수의 중심은 뜻이다. 표현 바꾸기는 성장 축이지 처벌 축이 아니다.
+ *   ② 남긴 낱말은 **하나당 같은 무게**로만 깎는다(문항 길이와 무관).
+ *   ③ 바닥을 둔다 — 뜻을 옮긴 학생이 절반 아래로 떨어지지 않는다.
+ *
+ * 그래도 **아무것도 안 바꾼 답은 0 이다.** 그건 무료 게이트(minAvoidance)가
+ * 먼저 걸러 내고 "이 중 하나만 먼저 바꿔 보세요" 로 되돌린다 — 과제를 안 한
+ * 답에 점수를 주면 이 유형이 재려는 것이 사라진다.
+ *
+ * 뜻이 완벽할 때 나오는 점수:  0개 남김 100 · 1개 80 · 2개 60(바닥)
+ */
+export const TYPE1_KEEP = {
+  /** 남긴 낱말 하나당 깎는 비율 */
+  penaltyPerWord: 0.2,
+  /** 아무리 깎여도 여기까지 — 뜻을 옮긴 것은 그 자체로 절반 이상의 일이다 */
+  floor: 0.6,
+} as const
+
+export function avoidanceFactor(reusedCount: number): number {
+  return Math.max(TYPE1_KEEP.floor, 1 - TYPE1_KEEP.penaltyPerWord * Math.max(0, reusedCount))
+}
+
 // ── 2단: 의미 판정을 곱해 최종 점수를 낸다 ────────────────────
 
 import { MEANING_LABEL, MEANING_SCORE } from "./type2"
@@ -125,7 +155,9 @@ export function finalizeType1(
   free: Type1Free,
   verdict: Type1Verdict | null,
 ): Type1Final {
-  const avoidance = avoidanceScore(free.avoidance)
+  // 남긴 낱말 **개수**로 깎는다. 비율로 재던 시절에는 목록이 2개인 문항(전체의 82%)에서
+  // 뜻이 완벽한 답이 35점을 받았다 — 학생이 한 일은 같은데 문항 사정으로 점수가 갈렸다.
+  const avoidance = avoidanceFactor(free.reused.length)
 
   if (free.fail) {
     return {
@@ -163,11 +195,18 @@ export function finalizeType1(
 
   const meaning = MEANING_SCORE[verdict.meaning] / 100
   const score = Math.round(100 * meaning * avoidance)
+
+  // 남긴 낱말은 **감점 사유가 아니라 다음 할 일**로 말한다. 예전에는 이 정보가
+  // 점수에만 반영되고 화면에서는 사라져서, 학생은 왜 100점이 아닌지 알 수 없었다.
+  const keptTip = free.reused.length
+    ? ` 아직 원문 그대로인 낱말: ${free.reused.slice(0, 3).join(", ")} — 이것까지 바꾸면 만점입니다.`
+    : ""
+
   return {
     score,
     errorName: verdict.meaning === "same" ? null : MEANING_LABEL[verdict.meaning],
     // 진단명이 아니라 **인정 + 팁**을 보여 준다. 진단명은 배지로만 남는다.
-    message: meaningFeedback(verdict.meaning, verdict.koreanFeedback),
+    message: meaningFeedback(verdict.meaning, verdict.koreanFeedback) + keptTip,
     // 만점이면 고칠 것이 없다. "이 답을 고친다면" 을 붙이면 잘한 학생에게 트집처럼
     // 읽히고, 판정기가 가끔 내놓는 **엉뚱한 문장**이 하필 거기서 가장 크게 보인다.
     // (실측: 100점 답안에 "confirm the data you obtain is precise and dependable" 이 붙었다.
