@@ -57,7 +57,10 @@ export const DEMO_ITEMS: DemoItem[] = [
     context:
       "Steady daily practice beats one long study session the night before a test.",
     hints: {
-      gloss: "꾸준한 매일의 연습",
+      // 원문을 직역한 "꾸준한 매일의 연습" 대신, **다른 낱말로 옮긴** 우리말을 준다.
+      // 본인 지시. 이렇게 두면 우리말 자체가 이미 "같은 뜻, 다른 표현" 을 보여 주고,
+      // 학생은 직역이 아니라 바꿔 말하기를 하게 된다.
+      gloss: "규칙적으로 매일 하는 연습",
       shape: "r______ e________ t________  (3낱말)",
       example: "regular everyday training",
     },
