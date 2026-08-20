@@ -34,7 +34,7 @@ test("홈에서 아무 인증 없이 데모로 들어간다", async ({ page }) =
   await page.goto("/")
   await page.getByRole("link", { name: /바꿔 말하기 세 유형/ }).click()
   await expect(page).toHaveURL(/\/demo/)
-  await expect(page.getByRole("heading", { name: /바꿔 말하기 세 유형/ })).toBeVisible()
+  await expect(page.getByRole("heading", { name: /바꿔 표현하기/ })).toBeVisible()
 })
 
 test("세 유형이 나란히 있고 화면에는 한 문제만 나온다", async ({ page }) => {
