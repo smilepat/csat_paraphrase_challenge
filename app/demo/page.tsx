@@ -7,7 +7,7 @@ import DemoClient from "./demo-client"
 //
 // 너비는 학생 화면(640px)이 아니라 **발표 화면** 기준이다. 빔프로젝터는 대개 가로가
 // 남고 세로가 모자라므로, 가로를 넓게 쓰고 세로 스크롤을 줄이는 쪽이 잘 보인다.
-export const metadata = { title: "유형 데모 — 세 가지 바꿔 말하기" }
+export const metadata = { title: "바꿔 표현하기 세 유형" }
 
 export default async function DemoPage() {
   const tasks = await demoTasks()
@@ -19,11 +19,11 @@ export default async function DemoPage() {
           ← 처음으로
         </Link>
         <h1 className="mt-1 text-[clamp(1.35rem,2.4vw,2.1rem)] font-bold leading-tight">
-          바꿔 말하기 세 유형 — 한 문제씩
+          수능영어의 세 가지 유형의 “바꿔 표현하기”
         </h1>
         <p className="mt-1 max-w-[80ch] text-[clamp(0.85rem,1vw,1.05rem)] leading-snug text-[var(--color-muted)]">
-          수능 지문에서 바꿔 말하기는 한 가지가 아니라 <b>세 가지</b>입니다. 각 유형이 무엇을
-          요구하는지 한 문제씩 직접 풀어 보세요. 학생이 보는 화면·채점기와 같은 것입니다.
+          수능 지문에서 같은 개념이 다르게 표현되는 <b>세 가지</b> 주요 유형입니다. 각 유형이
+          무엇을 요구하는지 한 문제씩 예로 직접 풀어 보세요.
         </p>
       </header>
 
