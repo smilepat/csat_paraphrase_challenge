@@ -138,6 +138,37 @@ function strategyHint(
  * 재료가 없는 칸은 **아예 넣지 않는다.** 그래서 level 은 배열의 위치이지
  * 고정된 의미가 아니다 — 유형 3 은 대개 [뜻, 전략] 두 칸뿐이다.
  */
+/**
+ * 1칸 — **무엇의** 뜻인지 밝힌다.
+ *
+ * 예전에는 뜻만 덩그러니 놓였다: `“꾸준한 매일의 연습” 라는 뜻입니다.`
+ * 이걸 읽은 사람이 **정답의 뜻**으로 읽었다(실사용 피드백). 그럴 만하다 —
+ * 문장 어디에도 "무엇의 뜻인지" 가 없었으니까. 이 칸이 주는 것은 **밑줄 친
+ * 원문**의 뜻이고, 학생이 할 일은 그 뜻을 자기 표현으로 다시 말하는 것이다.
+ *
+ * 이어지는 지시도 유형마다 다르다. 예전에는 셋 모두에 "영어로 다시 표현해
+ * 보세요" 가 붙었는데, 유형 3 은 산출 과제가 아니라 **범위를 고르는** 과제다.
+ */
+function glossHint(
+  type: number,
+  direction: string | null,
+  stimulus: string,
+  gloss: string,
+): string {
+  const quoted = stimulus.replace(/\s+/g, " ").trim()
+  // 영어 뒤에 은/는·이/가 를 붙이면 받침에 따라 어색해진다("this habit"는).
+  // "…의 뜻은 …입니다" 로 두면 조사 문제가 아예 생기지 않는다.
+  const head = `밑줄 친 “${quoted}” 의 뜻은 “${gloss}” 입니다.`
+
+  if (type === 3) return `${head}\n앞에서 이 내용을 말한 곳을 찾아 범위로 선택해 보세요.`
+  if (type === 2) {
+    return direction === "unfold"
+      ? `${head}\n이 내용을 **주어와 동사를 갖춘 문장**으로 바꿔 보세요.`
+      : `${head}\n이 내용을 **명사구 하나**로 바꿔 보세요.`
+  }
+  return `${head}\n같은 뜻을 **다른 영어 낱말로** 표현해 보세요.`
+}
+
 export function hintSteps(
   type: number,
   direction: string | null,
@@ -149,11 +180,7 @@ export function hintSteps(
   const m = material ?? {}
 
   if (m.gloss) {
-    steps.push({
-      level: 0,
-      label: "우리말 뜻",
-      body: `“${m.gloss}” 라는 뜻입니다. 이 내용을 **영어로 다시 표현해** 보세요.`,
-    })
+    steps.push({ level: 0, label: "우리말 뜻", body: glossHint(type, direction, stimulus, m.gloss) })
   }
 
   const strategy = strategyHint(type, direction, stimulus, avoidWords, m)

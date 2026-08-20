@@ -102,7 +102,7 @@ export const DEMO_ITEMS: DemoItem[] = [
     answer:
       "Many students read a page, look away, and try to say it back in their own words.",
     hints: {
-      gloss: "이 습관 — 앞에서 말한 무엇을 되받는다",
+      gloss: "이 습관",
       example: "앞 문장 전체(페이지를 읽고 고개를 돌려 자기 말로 말해 보는 것)",
     },
     teacherNote:
