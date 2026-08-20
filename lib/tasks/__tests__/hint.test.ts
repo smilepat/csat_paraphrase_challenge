@@ -69,6 +69,26 @@ describe("힌트 사다리", () => {
     expect(first.body).not.toContain("variability")
   })
 
+  // 실사용 피드백: 뜻만 덩그러니 놓으니 **정답의 뜻**으로 읽혔다.
+  // 이 칸이 주는 것은 밑줄 친 원문의 뜻이고, 그 사실이 문장 안에 있어야 한다.
+  it("무엇의 뜻인지 밝힌다 — 밑줄 친 원문을 그대로 인용한다", () => {
+    const first = hintSteps(2, "fold", stim, [], material)[0]!
+    expect(first.body).toContain("밑줄 친")
+    expect(first.body).toContain(stim)
+  })
+
+  it("이어지는 지시가 유형에 맞는다 — 유형 3 은 산출이 아니라 범위 고르기다", () => {
+    const t3 = hintSteps(3, "span", "this habit", [], { gloss: "이 습관" })[0]!
+    expect(t3.body).toContain("범위")
+    expect(t3.body).not.toContain("영어")
+
+    const t1 = hintSteps(1, null, "steady practice", [], { gloss: "꾸준한 연습" })[0]!
+    expect(t1.body).toContain("다른 영어 낱말")
+
+    const unfold = hintSteps(2, "unfold", "the slow improvement", [], { gloss: "느린 향상" })[0]!
+    expect(unfold.body).toContain("문장")
+  })
+
   it("정답은 마지막 칸에서만 나온다", () => {
     const s = hintSteps(2, "fold", stim, [], material)
     // 앞 세 칸 어디에도 예시 답이 새면 사다리가 무너진다
